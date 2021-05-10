@@ -1,0 +1,35 @@
+name: Run broken tests
+
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        julia-version: ['nightly']
+      fail-fast: false
+    name: Broken test Julia ${{ matrix.julia-version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.julia-version }}
+      # Use `JULIA_PKG_SERVER` mitigation implemented in julia-buildpkg:
+      - uses: julia-actions/julia-buildpkg@v1
+
+      # Maybe some useful information:
+      - run: julia -e 'using InteractiveUtils; versioninfo()'
+      - run: lscpu
+
+      - uses: julia-actions/julia-runtest@v1
+        id: test
+        env:
+          CI: "false"
+        continue-on-error: true
