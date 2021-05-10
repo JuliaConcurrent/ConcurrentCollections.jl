@@ -38,4 +38,4 @@ jobs:
           error("Unexpected pass")
         shell: julia --project {0}
         env:
-          CI: "true"
+          CI: "false"
