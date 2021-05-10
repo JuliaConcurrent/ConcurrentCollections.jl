@@ -52,7 +52,9 @@ const IS_CI = lowercase(get(ENV, "CI", "false")) == "true"
         end
 
         @testset "clusters" begin
-            if VERSION < v"1.7-" && IS_CI
+            if VERSION >= v"1.7-" && IS_CI
+                @info "skipping `clusters` (known bug)"
+            else
                 @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
             end
         end
@@ -82,7 +84,9 @@ const IS_CI = lowercase(get(ENV, "CI", "false")) == "true"
             @test "001" ∉ sort!(collect(keys(d)))
         end
         @testset "clusters" begin
-            if VERSION < v"1.7-" && IS_CI
+            if VERSION >= v"1.7-" && IS_CI
+                @info "skipping `clusters` (known bug)"
+            else
                 @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
             end
         end
