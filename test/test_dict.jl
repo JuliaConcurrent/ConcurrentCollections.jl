@@ -50,6 +50,7 @@ using Test
         end
 
         @testset "clusters" begin
+            @show typeof(d.slots) length(d.slots)
             @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
         end
     end
@@ -78,6 +79,7 @@ using Test
             @test "001" ∉ sort!(collect(keys(d)))
         end
         @testset "clusters" begin
+            @show typeof(d.slots) length(d.slots)
             @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
         end
     end
