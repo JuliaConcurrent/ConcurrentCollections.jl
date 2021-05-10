@@ -176,6 +176,43 @@ const _FALSE_ = Ref(false)
     return x
 end
 
+@generated function julia_write_barrier(args::Vararg{Any,N}) where {N}
+    pointer_exprs = map(1:N) do i
+        :(_pointer_from_objref(args[$i]))
+    end
+    jlp = "{} addrspace(10)*"
+    llvm_args = string.("%", 0:N-1)
+    word = "i$(Base.Sys.WORD_SIZE)"
+    entry_sig = join(word .* llvm_args, ", ")
+    ptrs = string.("%ptr", 0:N-1)
+    wb_sig = join("$jlp " .* ptrs, ", ")
+    inttoptr = join(
+        (ptrs .* "_tmp = inttoptr $word " .* llvm_args .* " to {}*\n") .*
+        (ptrs .* " = addrspacecast {}* " .* ptrs .* "_tmp to $jlp"),
+        "\n",
+    )
+    IR = (
+        """
+        define void @entry($entry_sig) #0 {
+        top:
+            $inttoptr
+            call void ($jlp, ...) @julia.write_barrier($wb_sig)
+            ret void
+        }
+
+        declare void @julia.write_barrier($jlp, ...) #1
+
+        attributes #0 = { alwaysinline }
+        attributes #1 = { inaccessiblememonly norecurse nounwind }
+        """,
+        "entry",
+    )
+    quote
+        $(Expr(:meta, :inline))
+        Base.llvmcall($IR, Cvoid, NTuple{N,Ptr{Cvoid}}, $(pointer_exprs...))
+    end
+end
+
 @generated allocate_singleton_ref(::Type{T}) where {T} = Ref{Any}(T.instance)
 
 @inline function pointer_from_singleton(::T) where {T}

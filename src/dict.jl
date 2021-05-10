@@ -274,11 +274,13 @@ end
 
 allocate_slot(::AbstractVector{<:AbstractPair}) = nothing
 
-@inline cas_slot!(slotref, new_slot, key) = cas_slot!(slotref, new_slot, key, NoValue())
+@inline cas_slot!(slotref, new_slot, root, key) =
+    cas_slot!(slotref, new_slot, root, key, NoValue())
 
 @inline function cas_slot!(
     slotref::InlinedSlotRef{Slot},
     ::Nothing,
+    root,
     key::KeyUnion{Key},
     value,
 ) where {Key,Value,Slot<:AbstractPair{Key,Value}}
@@ -300,8 +302,10 @@ allocate_slot(::AbstractVector{<:AbstractPair}) = nothing
     if Slot <: InlinedPair
         newkeyint = uint_from(Inlined{KeyUnion{Key}}(key))
     elseif key isa Moved{Key}
-        ref = forceheap(Ref(key))
+        ref = Ref(key)
         newkeyint = UInt(pointer_from_objref(ref))
+        julia_write_barrier(ref)
+        julia_write_barrier(root, ref)
     else
         newkeyint = UInt(_pointer_from_objref(key))
     end
@@ -349,6 +353,7 @@ allocate_slot(::AbstractVector{Slot}) where {Slot<:Ref} = forceheap(Slot())
 @inline function cas_slot!(
     slotref::RefSlotRef{Slot},
     new_slot::Slot,
+    root,
     key,
     value,
 ) where {P,Slot<:Ref{P}}
@@ -359,6 +364,8 @@ allocate_slot(::AbstractVector{Slot}) where {Slot<:Ref} = forceheap(Slot())
     GC.@preserve new_slot begin
         fu = UnsafeAtomics.cas!(Ptr{typeof(nu)}(ptr), ou, nu)
     end
+    julia_write_barrier(new_slot)
+    julia_write_barrier(root, new_slot)
     return fu == ou
 end
 
@@ -462,7 +469,7 @@ function ConcurrentCollections.modify!(
                 if reply isa Keep
                     return reply
                 elseif reply isa Union{Nothing,Delete}
-                    if cas_slot!(slotref, new_slot, Deleted())
+                    if cas_slot!(slotref, new_slot, slots, Deleted())
                         ndeleted = Threads.atomic_add!(dict.ndeleted, 1) + 1
                         approx_len = dict.nadded[] - ndeleted
                         if approx_len < length(slots) ÷ 2
@@ -471,7 +478,7 @@ function ConcurrentCollections.modify!(
                         return reply
                     end
                 else
-                    if cas_slot!(slotref, new_slot, nsk, something(reply))
+                    if cas_slot!(slotref, new_slot, slots, nsk, something(reply))
                         if sk isa Empty
                             Threads.atomic_add!(dict.nadded, 1)
                         end
@@ -661,7 +668,7 @@ function migrate_impl!(
             continue
         elseif sk isa Empty
             # Mark that this slot is not usable anymore
-            if !cas_slot!(slotref, allocate_slot(slots), MovedEmpty())
+            if !cas_slot!(slotref, allocate_slot(slots), slots, MovedEmpty())
                 @goto reload
             end
             stop_on_empty == Val(true) && return Stopped(i, nadded)
@@ -675,7 +682,7 @@ function migrate_impl!(
         if sk isa Moved
             key = sk.key
         else
-            if !cas_slot!(slotref, allocate_slot(slots), Moved(sk), sv)
+            if !cas_slot!(slotref, allocate_slot(slots), slots, Moved(sk), sv)
                 @goto reload
             end
             key = sk
