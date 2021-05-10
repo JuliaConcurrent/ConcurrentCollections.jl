@@ -33,3 +33,10 @@ jobs:
         env:
           CI: "false"
         continue-on-error: true
+
+      - name: "Expected failure"
+        run: "true"
+        if: ${{ steps.test.outcome == 'failure' }}
+      - name: "Unexpected pass"
+        run: "false"
+        if: ${{ steps.test.outcome != 'failure' }}
