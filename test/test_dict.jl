@@ -4,6 +4,10 @@ using ConcurrentCollections
 using ConcurrentCollections.Implementations: clusters
 using Test
 
+# make garbages
+garbages = [Vector{Int}(undef, 2^rand(1:5)) for _ in 1:100000]
+@show length(garbages)
+
 @testset for npairs in [2, 100]
     @testset for Key in [Int8, Int32, Int64], Value in [Int]
         d = ConcurrentDict{Key,Value}()
