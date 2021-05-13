@@ -54,7 +54,6 @@ garbages = [Vector{Int}(undef, 2^rand(1:5)) for _ in 1:100000]
         end
 
         @testset "clusters" begin
-            @show typeof(d.slots) length(d.slots)
             @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
         end
     end
@@ -83,7 +82,6 @@ garbages = [Vector{Int}(undef, 2^rand(1:5)) for _ in 1:100000]
             @test "001" ∉ sort!(collect(keys(d)))
         end
         @testset "clusters" begin
-            @show typeof(d.slots) length(d.slots)
             @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
         end
     end
