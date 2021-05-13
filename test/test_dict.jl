@@ -4,8 +4,6 @@ using ConcurrentCollections
 using ConcurrentCollections.Implementations: clusters
 using Test
 
-const IS_CI = lowercase(get(ENV, "CI", "false")) == "true"
-
 @testset for npairs in [2, 100]
     @testset for Key in [Int8, Int32, Int64], Value in [Int]
         d = ConcurrentDict{Key,Value}()
@@ -52,11 +50,7 @@ const IS_CI = lowercase(get(ENV, "CI", "false")) == "true"
         end
 
         @testset "clusters" begin
-            if VERSION >= v"1.7-" && IS_CI
-                @info "skipping `clusters` (known bug)"
-            else
-                @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
-            end
+            @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
         end
     end
 
@@ -84,11 +78,7 @@ const IS_CI = lowercase(get(ENV, "CI", "false")) == "true"
             @test "001" ∉ sort!(collect(keys(d)))
         end
         @testset "clusters" begin
-            if VERSION >= v"1.7-" && IS_CI
-                @info "skipping `clusters` (known bug)"
-            else
-                @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
-            end
+            @test length(clusters(d)::Vector{UnitRange{Int}}) > 0
         end
     end
 end
