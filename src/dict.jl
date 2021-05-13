@@ -361,11 +361,11 @@ allocate_slot(::AbstractVector{Slot}) where {Slot<:Ref} = forceheap(Slot())
     new_slot[] = value isa NoValue ? P(key) : P(key, value)
     ou = UInt(pointer_from_objref(slotref.ref))
     nu = UInt(pointer_from_objref(new_slot))
+    julia_write_barrier(new_slot)
+    julia_write_barrier(root, new_slot)
     GC.@preserve new_slot begin
         fu = UnsafeAtomics.cas!(Ptr{typeof(nu)}(ptr), ou, nu)
     end
-    julia_write_barrier(new_slot)
-    julia_write_barrier(root, new_slot)
     return fu == ou
 end
 
