@@ -166,16 +166,6 @@ end
     end
 end
 
-const _FALSE_ = Ref(false)
-
-# TODO: a teribble hack to force heap-allocation of `x`; can we get rid of it?
-@inline function forceheap(x)
-    if _FALSE_[]
-        global SINK = x
-    end
-    return x
-end
-
 @generated function julia_write_barrier(args::Vararg{Any,N}) where {N}
     pointer_exprs = map(1:N) do i
         :(_pointer_from_objref(args[$i]))
@@ -183,7 +173,7 @@ end
     jlp = "{} addrspace(10)*"
     llvm_args = string.("%", 0:N-1)
     word = "i$(Base.Sys.WORD_SIZE)"
-    entry_sig = join(word .* llvm_args, ", ")
+    entry_sig = join(word .* " " .* llvm_args, ", ")
     ptrs = string.("%ptr", 0:N-1)
     wb_sig = join("$jlp " .* ptrs, ", ")
     inttoptr = join(

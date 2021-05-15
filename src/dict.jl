@@ -348,22 +348,24 @@ end
 
 @inline value_ref(ref::RefSlotRef) = ImmutableRef(ref.ref[].value.x)
 
-allocate_slot(::AbstractVector{Slot}) where {Slot<:Ref} = forceheap(Slot())
+allocate_slot(::AbstractVector{Slot}) where {Slot<:Ref} = Ref(Slot())
+# One indirection to force heap allocation
 
 @inline function cas_slot!(
     slotref::RefSlotRef{Slot},
-    new_slot::Slot,
+    new_slot_ref::Ref{Slot},
     root,
     key,
     value,
 ) where {P,Slot<:Ref{P}}
     ptr = slotref.ptr
+    new_slot = new_slot_ref[]
     new_slot[] = value isa NoValue ? P(key) : P(key, value)
-    ou = UInt(pointer_from_objref(slotref.ref))
-    nu = UInt(pointer_from_objref(new_slot))
-    julia_write_barrier(new_slot)
-    julia_write_barrier(root, new_slot)
-    GC.@preserve new_slot begin
+    GC.@preserve new_slot_ref begin
+        ou = UInt(pointer_from_objref(slotref.ref))
+        nu = UInt(unsafe_load(Ptr{Ptr{Cvoid}}(pointer_from_objref(new_slot_ref))))
+        julia_write_barrier(new_slot)
+        julia_write_barrier(root, new_slot)
         fu = UnsafeAtomics.cas!(Ptr{typeof(nu)}(ptr), ou, nu)
     end
     return fu == ou
