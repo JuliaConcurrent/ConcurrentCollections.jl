@@ -9,6 +9,17 @@ macro static_error(msg::AbstractString)
     :(static_error(Val{$(QuoteNode(sym))}()))
 end
 
+function ceillog2(n::Integer)
+    n > 0 || throw(DomainError(n))
+    i = trailing_zeros(n)
+    j = 8 * sizeof(n) - leading_zeros(n) - 1
+    if i == j
+        return i
+    else
+        return j + 1
+    end
+end
+
 struct Inlined{T}
     x::T
 end
