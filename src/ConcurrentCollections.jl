@@ -3,6 +3,7 @@ baremodule ConcurrentCollections
 export
     #
     ConcurrentDict,
+    ConcurrentQueue,
     Delete,
     Keep,
     WorkStealingDeque,
@@ -60,9 +61,10 @@ include("utils.jl")
 include("atomicsutils.jl")
 include("dict.jl")
 include("workstealing.jl")
+include("msqueue.jl")
 
 end  # module Implementations
 
-using .Implementations: WorkStealingDeque
+using .Implementations: WorkStealingDeque, ConcurrentQueue
 
 end  # baremodule ConcurrentCollections
