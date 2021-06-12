@@ -69,4 +69,6 @@ end  # module Implementations
 
 using .Implementations: ConcurrentQueue, ConcurrentStack, WorkStealingDeque
 
+Implementations.define_docstrings()
+
 end  # baremodule ConcurrentCollections
