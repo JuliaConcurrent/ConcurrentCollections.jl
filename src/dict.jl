@@ -298,14 +298,14 @@ allocate_slot(::AbstractVector{<:AbstractPair}) = nothing
         # TODO: handle `Value isa Union`
         newvalueint = uint_from(value)
     end
-    ref = nothing
+    handle = nothing
     if Slot <: InlinedPair
         newkeyint = uint_from(Inlined{KeyUnion{Key}}(key))
     elseif key isa Moved{Key}
-        ref = Ref(key)
-        newkeyint = UInt(pointer_from_objref(ref))
-        julia_write_barrier(ref)
-        julia_write_barrier(root, ref)
+        handle = Ref{Any}(Ref(key))
+        GC.@preserve handle begin
+            newkeyint = unsafe_load(Ptr{UInt}(pointer_from_objref(handle)))
+        end
     else
         newkeyint = UInt(_pointer_from_objref(key))
     end
@@ -316,7 +316,7 @@ allocate_slot(::AbstractVector{<:AbstractPair}) = nothing
     ou = UIntType(oldvalueint)
     ou <<= fieldoffset(Slot, 2) * 8
     ou |= slotref.keyint
-    GC.@preserve ref begin
+    GC.@preserve handle begin
         fu = UnsafeAtomics.cas!(Ptr{typeof(nu)}(ptr), ou, nu)
     end
     # @show ou nu fu
@@ -361,11 +361,10 @@ allocate_slot(::AbstractVector{Slot}) where {Slot<:Ref} = Ref(Slot())
     ptr = slotref.ptr
     new_slot = new_slot_ref[]
     new_slot[] = value isa NoValue ? P(key) : P(key, value)
-    GC.@preserve new_slot_ref begin
-        ou = UInt(pointer_from_objref(slotref.ref))
+    ref = slotref.ref
+    GC.@preserve ref new_slot_ref begin
+        ou = UInt(pointer_from_objref(ref))
         nu = UInt(unsafe_load(Ptr{Ptr{Cvoid}}(pointer_from_objref(new_slot_ref))))
-        julia_write_barrier(new_slot)
-        julia_write_barrier(root, new_slot)
         fu = UnsafeAtomics.cas!(Ptr{typeof(nu)}(ptr), ou, nu)
     end
     return fu == ou
