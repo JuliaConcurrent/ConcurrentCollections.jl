@@ -22,5 +22,5 @@ end
 
 deploydocs(
     repo = "github.com/tkf/ConcurrentCollections.jl",
-    # push_preview = true,
+    push_preview = true,
 )
