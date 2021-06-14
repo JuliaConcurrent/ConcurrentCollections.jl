@@ -34,10 +34,9 @@ end
         )
     else
         fptr = fieldpointer(obj, field)
-        vint = UInt(pointer_from_objref(value))
-        julia_write_barrier(value)
-        julia_write_barrier(obj, value)
-        GC.@preserve obj value begin
+        ref = Ref{Any}(value)
+        GC.@preserve obj ref begin
+            vint = unsafe_load(Ptr{UInt}(pointer_from_objref(ref)))
             UnsafeAtomics.store!(fptr, vint, order)
         end
     end
