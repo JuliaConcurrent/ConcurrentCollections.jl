@@ -5,12 +5,16 @@ using BenchmarkTools: Benchmark, BenchmarkGroup
 include("bench_dict_histogram.jl")
 include("bench_dict_get_existing.jl")
 include("bench_dict_migration.jl")
+include("bench_queue_pushpop.jl")
+include("bench_queue_hot_potato.jl")
 
 function setup()
     suite = BenchmarkGroup()
     suite["DictHistogram"] = BenchDictHistogram.setup()
     suite["DictGetExisting"] = BenchDictGetExisting.setup()
     suite["DictMigration"] = BenchDictMigration.setup()
+    suite["QueuePushPop"] = BenchQueuePushPop.setup()
+    suite["HotPotato"] = BenchQueueHotPotato.setup()
     return suite
 end
 
@@ -40,6 +44,8 @@ function clear()
     BenchDictHistogram.clear()
     BenchDictGetExisting.clear()
     BenchDictMigration.clear()
+    BenchQueuePushPop.clear()
+    BenchQueueHotPotato.clear()
 end
 
 end # module
