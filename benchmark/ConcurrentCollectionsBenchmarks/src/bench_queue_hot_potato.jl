@@ -26,7 +26,7 @@ function unfair_sleep(seconds::Real)
     end
 end
 
-function hotpotato!(
+@noinline function hotpotato!(
     q;
     ntasks::Integer = Threads.nthreads(),
     duration::Union{Real,Nothing} = nothing,
