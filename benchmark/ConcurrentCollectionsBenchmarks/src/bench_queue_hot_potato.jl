@@ -31,6 +31,9 @@ end
     ntasks::Integer = Threads.nthreads(),
     duration::Union{Real,Nothing} = nothing,
     nrepeat::Integer = duration === nothing ? 2^15 : typemax(Int64),
+    delay::Real = 0,  # not using 0.001 mentioned in Izraelevitz & Scott (2017)
+    nfills::Integer = 0,
+    ppush::Real = 0.5,
 )
     ntasks < 1 && error("require positive `ntasks`: got $ntasks")
     local tasks
@@ -43,17 +46,18 @@ end
         local npop = 0
         for irepeat in 1:nrepeat
             # ccall(:jl_breakpoint, Cvoid, (Any,), (; irepeat, itask))
-            if rand(Bool)
+            if rand() < ppush
                 push!(q, NOTPOTATO)
                 npush += 1
             else
                 y = popfirst!(q)
                 npop += 1
                 if y == HOTPOTATO
-                    # Since there are GC pauses, maybe there's no need
-                    # to add sleep here.
-                    # unfair_sleep(0.001)
-                    # sleep(0.001)
+                    for _ in 1:nfills
+                        push!(q, NOTPOTATO)
+                    end
+                    unfair_sleep(delay)
+                    # sleep(delay)
                     push!(q, y)
                     npush += 1
                 end
