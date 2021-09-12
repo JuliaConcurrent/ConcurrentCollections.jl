@@ -2,6 +2,7 @@ module ConcurrentCollectionsBenchmarks
 
 using BenchmarkTools: Benchmark, BenchmarkGroup
 
+include("utils.jl")
 include("bench_dict_histogram.jl")
 include("bench_dict_get_existing.jl")
 include("bench_dict_migration.jl")

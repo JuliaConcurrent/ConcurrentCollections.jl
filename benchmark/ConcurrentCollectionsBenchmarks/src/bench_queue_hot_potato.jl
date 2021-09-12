@@ -1,10 +1,10 @@
 module BenchQueueHotPotato
 
-using Base.Experimental: @sync
 using BenchmarkTools
 using ConcurrentCollections
 using ConcurrentCollections.Implementations: atomic_modifyfield!
 using Formatting: format
+using ..Utils: maptasks
 
 const HOTPOTATO = false
 const NOTPOTATO = true
@@ -36,39 +36,35 @@ end
     local tasks
     push!(q, HOTPOTATO)
     t0 = time_ns()
-    @sync begin
-        tasks = map(1:ntasks) do itask
-            Threads.@spawn begin
-                # Core.print("$itask-th task started\n")
-                local t1 = time_ns()
-                local npush = 0
-                local npop = 0
-                for irepeat in 1:nrepeat
-                    # ccall(:jl_breakpoint, Cvoid, (Any,), (; irepeat, itask))
-                    if rand(Bool)
-                        push!(q, NOTPOTATO)
-                        npush += 1
-                    else
-                        y = popfirst!(q)
-                        npop += 1
-                        if y == HOTPOTATO
-                            # Since there are GC pauses, maybe there's no need
-                            # to add sleep here.
-                            # unfair_sleep(0.001)
-                            # sleep(0.001)
-                            push!(q, y)
-                            npush += 1
-                        end
-                    end
-                    if duration !== nothing
-                        if (time_ns() - t0) / 1e9 > duration
-                            break
-                        end
-                    end
+    tasks = maptasks(1:ntasks) do itask
+        # Core.print("$itask-th task started\n")
+        local t1 = time_ns()
+        local npush = 0
+        local npop = 0
+        for irepeat in 1:nrepeat
+            # ccall(:jl_breakpoint, Cvoid, (Any,), (; irepeat, itask))
+            if rand(Bool)
+                push!(q, NOTPOTATO)
+                npush += 1
+            else
+                y = popfirst!(q)
+                npop += 1
+                if y == HOTPOTATO
+                    # Since there are GC pauses, maybe there's no need
+                    # to add sleep here.
+                    # unfair_sleep(0.001)
+                    # sleep(0.001)
+                    push!(q, y)
+                    npush += 1
                 end
-                return (; npush, npop, t1, t2 = time_ns())::Stat
+            end
+            if duration !== nothing
+                if (time_ns() - t0) / 1e9 > duration
+                    break
+                end
             end
         end
+        return (; npush, npop, t1, t2 = time_ns())::Stat
     end
     return HotPotatoResult(; nrepeat, duration, stats = map(fetch, tasks))
 end
@@ -100,29 +96,25 @@ function fai_stats(;
         AtomicRef{Int32}(0)
     end
     t0 = time_ns()
-    @sync begin
-        tasks = map(1:ntasks) do itask
-            Threads.@spawn begin
-                local t1 = time_ns()
-                local nfai = 0
-                for irepeat in 1:nrepeat
-                    if impl === Val(:threads)
-                        Threads.atomic_add!(ref, Int32(1))
-                    elseif impl === Val(:unsafe)
-                        atomic_modifyfield!(ref, Val(:x), +, Int32(1))
-                    else
-                        @atomic ref.x += true
-                    end
-                    nfai += 1
-                    if duration !== nothing
-                        if (time_ns() - t0) / 1e9 > duration
-                            break
-                        end
-                    end
+    tasks = maptasks(1:ntasks) do itask
+        local t1 = time_ns()
+        local nfai = 0
+        for irepeat in 1:nrepeat
+            if impl === Val(:threads)
+                Threads.atomic_add!(ref, Int32(1))
+            elseif impl === Val(:unsafe)
+                atomic_modifyfield!(ref, Val(:x), +, Int32(1))
+            else
+                @atomic ref.x += true
+            end
+            nfai += 1
+            if duration !== nothing
+                if (time_ns() - t0) / 1e9 > duration
+                    break
                 end
-                return (; nfai, t1, t2 = time_ns())::FAIStat
             end
         end
+        return (; nfai, t1, t2 = time_ns())::FAIStat
     end
     if impl === Val(:threads)
         refvalue = ref[]
