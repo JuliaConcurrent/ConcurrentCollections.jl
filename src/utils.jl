@@ -2,6 +2,7 @@
 !=′(x::T, y::T) where {T} = x != y
 
 assertion_enabled() = false
+# assertion_enabled() = true
 
 @noinline unreachable() = error("unreachable reached")
 
