@@ -54,7 +54,7 @@ plt = @vlplot(
     x = {:ntasks, title = "Number of Tasks"},
     y = {:throughput, title = "Throughput [#OP/second]"},
     color = :Implementation,
-    title = "Hot Potato Benchmark",
+    # title = "Hot Potato Benchmark",
     data = datadf,
 )
 
@@ -77,7 +77,7 @@ plt_speedup = @vlplot(
     :point,
     x = {:ntasks, title = "Number of Tasks"},
     y = {:speedup, title = "Speedup [DLCRQ/Base]"},
-    title = "Hot Potato Benchmark (Speedup)",
+    # title = "Hot Potato Benchmark (Speedup)",
     data = summarydf,
 )
 
@@ -91,7 +91,7 @@ plt_trialid = @vlplot(
         :trialid,
         scale = {scheme = :magma},
     },
-    title = "Hot Potato Benchmark",
+    # title = "",
     data = datadf[datadf.impl .== :base, :],
 )
 
