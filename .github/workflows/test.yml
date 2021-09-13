@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        julia-version: ['nightly']
+        julia-version: ['~1.7.0-beta4', 'nightly']
       fail-fast: false
     name: Test Julia ${{ matrix.julia-version }}
     steps:
