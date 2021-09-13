@@ -210,6 +210,35 @@ end
     end
 end
 
+@inline function check_embeddable(::Type{Storage}, ::Type{Data}) where {Storage,Data}
+    sizeof(Storage) ≥ sizeof(Data) || @static_error "sizeof(Storage) < sizeof(Data)"
+    Base.allocatedinline(Storage) || @static_error "!allocatedinline(Storage)"
+    Base.allocatedinline(Data) || @static_error "!allocatedinline(Data)"
+    isconcretetype(Storage) || @static_error "!isconcretetype(Storage)"
+end
+
+@inline function unsafe_embed(::Type{Storage}, x) where {Storage}
+    Data = Some{typeof(x)}
+    check_embeddable(Storage, Data)
+    ref = Ref{Storage}()
+    GC.@preserve ref begin
+        ptr = Ptr{Data}(pointer_from_objref(ref))
+        unsafe_store!(ptr, Data(x))
+    end
+    return ref[]
+end
+
+@inline function unsafe_extract(::Type{U}, x::Storage) where {U,Storage}
+    Data = Some{U}
+    check_embeddable(Storage, Data)
+    ref = Ref{Storage}(x)
+    GC.@preserve ref begin
+        ptr = Ptr{Data}(pointer_from_objref(ref))
+        y = unsafe_load(ptr)
+    end
+    return something(y)
+end
+
 # Read /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size?
 const CACHELINE_SIZE = 64
 

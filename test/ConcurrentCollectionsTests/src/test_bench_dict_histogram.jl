@@ -27,6 +27,16 @@ function test(datasize, fulldata)
             global FAILED = (; cdpar, dbase)
         end
         =#
+        @test sort(collect(setdiff(keys(dbase), keys(cdpar)))) == []
+        @test sort(collect(setdiff(keys(cdpar), keys(dbase)))) == []
+        diffvalues = []
+        for (key, expected) in dbase
+            actual = cdpar[key]
+            if actual != expected
+                push!(diffvalues, (; key, actual, expected))
+            end
+        end
+        @test diffvalues == []
         @test Dict(cdpar) == dbase
     end
 end
