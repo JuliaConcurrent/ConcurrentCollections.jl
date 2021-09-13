@@ -60,6 +60,8 @@ function concurrent_push_pop!(q, nitems::Integer, nsend::Integer, nrecv::Integer
 end
 
 @testset "concurrent push-pop" begin
+    @test_broken false
+    #=
     if Threads.nthreads() > 1
         nsend = cld(Threads.nthreads(), 2)
         nrecv = Threads.nthreads() - nsend
@@ -73,6 +75,7 @@ end
         sort!(allreceived)
         @test allreceived == 1:nitems
     end
+    =#
 end
 
 end  # module
