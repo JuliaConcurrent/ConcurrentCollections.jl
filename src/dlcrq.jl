@@ -165,9 +165,6 @@ const SmallUnsigned = Union{Bool,UInt8,UInt16}
 const NullableInline32 = Union{SmallSigned,SmallUnsigned}
 
 function IndirectMultiPolarityConcurrentRingQueueNode{T}(log2len::Int) where {T}
-    if !(0 <= log2len <= ITEMINDEX_BITS32)
-        error("Expected: 0 <= log2len <= $ITEMINDEX_BITS32; Got log2len = $log2len")
-    end
     len = 2^log2len
     if T <: NullableInline32 && isconcretetype(T)
         data = nothing

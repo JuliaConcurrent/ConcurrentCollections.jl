@@ -2,14 +2,7 @@ module TestLCRQ
 
 using Base.Experimental: @sync
 using ConcurrentCollections
-using ConcurrentCollections.Implementations: ICRQIndex
 using Test
-
-@testset "ICRQIndex" begin
-    idx = ICRQIndex(threadindex = 111, itemindex = 222)
-    @test idx.threadindex == 111
-    @test idx.itemindex == 222
-end
 
 @testset "push-pop once" begin
     q = LinkedConcurrentRingQueue{Int}()
