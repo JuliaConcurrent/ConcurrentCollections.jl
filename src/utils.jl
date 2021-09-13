@@ -1,3 +1,8 @@
+==′(x::T, y::T) where {T} = x == y
+!=′(x::T, y::T) where {T} = x != y
+
+assertion_enabled() = false
+
 @noinline unreachable() = error("unreachable reached")
 
 @noinline unexpected(x) = error("unexpected value: $x")
@@ -125,6 +130,26 @@ function from_bytes(::Type{T}, uint::UIntType) where {T,UIntType}
     end
 end
 
+function UnsafeAtomics.load(p::Ptr{T}, ord::Val) where {T}
+    q = Ptr{uint_for(T)}(p)
+    uint = UnsafeAtomics.load(q, ord)
+    return from_bytes(T, uint)
+end
+
+function UnsafeAtomics.store!(p::Ptr{T}, v::T, ord::Val) where {T}
+    uint = uint_from(v)
+    q = Ptr{typeof(uint)}(p)
+    UnsafeAtomics.store!(q, uint, ord)
+end
+
+function UnsafeAtomics.cas!(p::Ptr{T}, cmp::T, new::T, so::Val, fo::Val) where {T}
+    ci = uint_from(cmp)
+    ni = uint_from(new)
+    q = Ptr{typeof(ci)}(p)
+    oi = UnsafeAtomics.cas!(q, ci, ni, so, fo)
+    return from_bytes(T, oi)
+end
+
 @inline isinlinable(::Type{Inlined{T}}) where {T} = isinlinable(T)
 @inline isinlinable(T::Type) = Base.isbitstype(T) || Base.isbitsunion(T)
 
@@ -184,6 +209,36 @@ end
     end
 end
 
+# Read /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size?
+const CACHELINE_SIZE = 64
+
+primitive type PadAfter64 448 end
+PadAfter64() = Ref{PadAfter64}()[]
+
+mutable struct CheckPadAfter64
+    a::UInt64
+    pad::PadAfter64
+    b::UInt64
+end
+@assert fieldoffset(CheckPadAfter64, 3) == CACHELINE_SIZE
+
+const PadAfter32 = PadAfter64
+
+mutable struct CheckPadAfter32
+    a::UInt32
+    pad::PadAfter32
+    b::UInt32
+end
+@assert fieldoffset(CheckPadAfter32, 3) == CACHELINE_SIZE
+
+function cacheline_padded_vector(::Type{T}, n::Integer) where {T}
+    cacheline = cld(sizeof(T), CACHELINE_SIZE)
+    xs = Vector{T}(undef, cacheline * (n + 1))
+    ys = view(xs, cacheline+1:cacheline:length(xs))
+    @assert length(ys) == n
+    return ys
+end
+
 function threaded_foreach(f, xs)
     y = iterate(xs)
     y === nothing && return
@@ -232,7 +287,7 @@ function define_docstrings()
         stem, ext = splitext(filename)
         ext == ".md" || continue
         name = Symbol(stem)
-        name in names(ConcurrentCollections, all=true) || continue
+        name in names(ConcurrentCollections, all = true) || continue
         push!(docstrings, name => joinpath(docsdir, filename))
     end
     for (name, path) in docstrings

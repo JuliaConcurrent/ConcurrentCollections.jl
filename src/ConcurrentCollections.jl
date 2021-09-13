@@ -6,7 +6,9 @@ export
     ConcurrentQueue,
     ConcurrentStack,
     Delete,
+    DualLinkedConcurrentRingQueue,
     Keep,
+    LinkedConcurrentRingQueue,
     WorkStealingDeque,
     length_upper_bound,
     length_upper_bound,
@@ -59,15 +61,24 @@ include("UnsafeAtomics.jl")
 using .UnsafeAtomics: acq_rel, acquire, monotonic, release, seq_cst, unordered
 
 include("utils.jl")
+include("cache.jl")
 include("atomicsutils.jl")
 include("dict.jl")
 include("workstealing.jl")
 include("msqueue.jl")
 include("stack.jl")
+include("lcrq.jl")
+include("dlcrq.jl")
+include("misc.jl")
 
 end  # module Implementations
 
-using .Implementations: ConcurrentQueue, ConcurrentStack, WorkStealingDeque
+using .Implementations:
+    ConcurrentQueue,
+    ConcurrentStack,
+    DualLinkedConcurrentRingQueue,
+    LinkedConcurrentRingQueue,
+    WorkStealingDeque
 
 Implementations.define_docstrings()
 

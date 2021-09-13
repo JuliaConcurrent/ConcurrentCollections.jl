@@ -13,11 +13,35 @@ const seq_cst = Val{:seq_cst}()
 
 const orderings = [:unordered, :monotonic, :acquire, :release, :acq_rel, :seq_cst]
 
+@inline load(x) = load(x, seq_cst)
+@inline store!(x, v) = store!(x, v, seq_cst)
+@inline cas!(x, cmp, new) = cas!(x, cmp, new, seq_cst, seq_cst)
+@inline modify!(ptr, op, x) = modify!(ptr, op, x, seq_cst)
+
+right(_, x) = x
+
+const OP_RMW_TABLE = [
+    (+) => :add,
+    (-) => :sub,
+    right => :xchg,
+    (&) => :and,
+    (⊼) => :nand,
+    (|) => :or,
+    (⊻) => xor,
+    max => :max,
+    min => :min,
+]
+
+for (op, rmwop) in OP_RMW_TABLE
+    fn = Symbol(rmwop, "!")
+    @eval @inline $fn(x, v) = $fn(x, v, seq_cst)
+    @eval @inline modify!(ptr, ::typeof($op), x, ord::Val) = $fn(ptr, x, ord)
+end
+
 for typ in inttypes
     lt = llvmtypes[typ]
     rt = "$lt, $lt*"
 
-    @eval @inline load(x::Ptr{$typ}) = load(x, seq_cst)
     for ord in orderings
         ord in [:release, :acq_rel] && continue
 
@@ -35,7 +59,6 @@ for typ in inttypes
         end
     end
 
-    @eval @inline store!(x::Ptr{$typ}, v::$typ) = store!(x, v, seq_cst)
     for ord in orderings
         ord in [:acquire, :acq_rel] && continue
 
@@ -54,8 +77,6 @@ for typ in inttypes
         end
     end
 
-    @eval @inline cas!(x::Ptr{$typ}, cmp::$typ, new::$typ) =
-        cas!(x, cmp, new, seq_cst, seq_cst)
     for success_ordering in orderings[2:end],
         failure_ordering in [:monotonic, :acquire, :seq_cst]
 
@@ -91,7 +112,6 @@ for typ in inttypes
             # LLVM distinguishes signedness in the operation, not the integer type.
             rmw = "u" * rmw
         end
-        @eval @inline $fn(x::Ptr{$typ}, v::$typ) = $fn(x, v, seq_cst)
         for ord in orderings
             @eval function $fn(x::Ptr{$typ}, v::$typ, ::$(Val{ord}))
                 return llvmcall(
