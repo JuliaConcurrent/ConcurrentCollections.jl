@@ -73,7 +73,6 @@ end
 @testset "concurrent push-pop" begin
     if Threads.nthreads() > 1
         @testset for trial in 1:100
-            # @show trial
             nsend = cld(Threads.nthreads(), 2)
             nrecv = Threads.nthreads() - nsend
             @assert nsend ≥ 1

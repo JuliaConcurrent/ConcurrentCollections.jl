@@ -127,6 +127,7 @@ function trypush!(crq::IndirectConcurrentRingQueueNode, x)
                 buffer[itemindex] = x
                 storage = UInt32(tid)
                 # storage = _embed(UInt32, x)
+                @assert !iszero(storage)
                 newslot = CRQSlot(; safe = true, index = t, storage)
                 old = UnsafeAtomics.cas!(slotptr, slot, newslot)
                 if old == slot
@@ -163,7 +164,6 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
                     # before reading the type tag. (That said, currently it may
                     # not be a problem since GC stops all tasks?)
 
-                    # newslot = CRQSlot(; safe, index = h + crq.length, storage = UInt32(0))
                     newslot = CRQSlot(; safe, index = h + crq.length, storage = UInt32(0))
                     old = UnsafeAtomics.cas!(slotptr, slot, newslot)
                     if old === slot
@@ -177,7 +177,8 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
                     end
                 end
             else  # empty slot
-                newslot = CRQSlot(; safe, index = index + crq.length, storage)
+                # `max(h, index)` for dealing with tasks stalled after FAI [^maxh]
+                newslot = CRQSlot(; safe, index = max(h, index) + crq.length, storage)
                 old = UnsafeAtomics.cas!(slotptr, slot, newslot)
                 if old == slot
                     break
@@ -194,6 +195,15 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
         end
     end
 end
+# [^maxh]: `max(h, index)` was not mentioned in Morrison and Afek (2013) (or its
+# revised version) so it's not clear if this is needed.  However, it is possible
+# that multiple enqueuers and/or dequeuers that would have incremented the
+# `slot.index` is suspended just after the FAI.  If so, `slot.index` can be a
+# round (or even multiple rounds) behind the current `crq.head`.  So, it seems
+# like we need to prevent the enqueuing to this index (hence missing the item)
+# by moving this to the next round.
+#
+# TODO: Is it OK to skip updating the slot if `index > h`?
 
 function fixstate!(crq::IndirectConcurrentRingQueueNode)
     while true
@@ -285,4 +295,16 @@ function Base.show(io::IO, ::MIME"text/plain", crq::IndirectConcurrentRingQueueN
     nitems = max(0, t - h)
     status = isclosed(crq) ? "closed" : "open"
     print(io, "CRQ: $nitems item(s) (status: $status, head: $h, tail: $t)")
+end
+
+function Base.NamedTuple(slot::CRQSlot)
+    (; index, safe, storage) = slot
+    return (; index, safe, storage)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", slot::CRQSlot)
+    if get(io, :typeinfo, Any) !== typeof(slot)
+        show(io, MIME"text/plain"(), typeof(slot))
+    end
+    show(io, MIME"text/plain"(), NamedTuple(slot))
 end
