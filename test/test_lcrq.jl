@@ -85,9 +85,8 @@ end
             nrecv = Threads.nthreads() - nsend
             @assert nsend ≥ 1
             @assert nrecv ≥ 1
-            q = LinkedConcurrentRingQueue{Int16}(32)
-            # nitems = 2^20
-            nitems = typemax(Int16)
+            q = LinkedConcurrentRingQueue{Int}(32)
+            nitems = 2^20
             received = concurrent_push_pop!(q, nitems, nsend, nrecv)
             allreceived = reduce(vcat, received)
             @test length(allreceived) == nitems
