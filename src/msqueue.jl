@@ -23,8 +23,8 @@ function Base.push!(queue::ConcurrentQueue{T}, v) where {T}
     v = convert(T, v)
     node = MSQNode{T}(nothing, v)
 
+    tail = @atomic queue.tail
     while true
-        tail = @atomic queue.tail
         next = @atomic tail.next
         if next === nothing
             next, ok = @atomicreplace(tail.next, next => node)
@@ -32,8 +32,12 @@ function Base.push!(queue::ConcurrentQueue{T}, v) where {T}
                 @atomicreplace(queue.tail, tail => node)
                 return queue
             end
+            tail = @atomic queue.tail
         else
-            tail, _ = @atomicreplace(queue.tail, tail => next)
+            tail, ok = @atomicreplace(queue.tail, tail => next)
+            if ok
+                tail = next
+            end
         end
     end
 end
