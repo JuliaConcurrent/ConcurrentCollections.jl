@@ -4,6 +4,7 @@ using Base.Experimental: @sync
 using ConcurrentCollections
 using ConcurrentCollections.Implementations:
     MPCRQSlot, DATA, ANTIDATA, denqueue!, MPCRQ_ENQUEUED
+using ProgressLogging: @logprogress, @withprogress
 using Test
 
 function var"test_MPCRQSlot"()
@@ -121,23 +122,29 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-function var"test_concurrent push-pop"()
-    @testset for trial in 1:100
-        # @show trial
-        nsend = cld(Threads.nthreads(), 2)
-        nrecv = max(1, Threads.nthreads() - nsend)
-        q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 5)
-        # q = Channel{Int}(Inf)
-        nitems = 2^20
-        received = concurrent_push_pop!(q, nitems, nsend, nrecv)
-        allreceived = reduce(vcat, received)
-        sort!(allreceived)
-        (; notfound, dups) = check_consecutive(allreceived)
-        @test length(allreceived) == nitems
-        @test notfound == []
-        @test dups == []
-        @test allreceived == 1:nitems
+function test_concurrent_push_pop(ntrials = 100)
+    @withprogress name = "concurrent push-pop" begin
+        @testset for trial in 1:ntrials
+            @logprogress (trial - 1) / ntrials
+            check_concurrent_push_pop()
+        end
     end
+end
+
+function check_concurrent_push_pop()
+    nsend = cld(Threads.nthreads(), 2)
+    nrecv = max(1, Threads.nthreads() - nsend)
+    q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 5)
+    # q = Channel{Int}(Inf)
+    nitems = 2^20
+    received = concurrent_push_pop!(q, nitems, nsend, nrecv)
+    allreceived = reduce(vcat, received)
+    sort!(allreceived)
+    (; notfound, dups) = check_consecutive(allreceived)
+    @test length(allreceived) == nitems
+    @test notfound == []
+    @test dups == []
+    @test allreceived == 1:nitems
 end
 
 end  # module
