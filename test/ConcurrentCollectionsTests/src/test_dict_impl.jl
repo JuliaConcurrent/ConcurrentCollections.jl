@@ -6,7 +6,7 @@ using Test
 
 slottype(Key, Value) = eltype(ConcurrentDict{Key,Value}().slots)
 
-@testset "slot type" begin
+function var"test_slot type"()
     @test slottype(Int8, Int) <: InlinedPair{Int8,Int}
     @test slottype(Int16, Int) <: InlinedPair{Int16,Int}
     @test slottype(Int32, Int) <: InlinedPair{Int32,Int}

@@ -10,7 +10,7 @@ mutable struct M1
     ys::Union{Vector{Int},Nothing}
 end
 
-@testset "fields" begin
+function var"test_fields"()
     a = [0]
     b = [1]
     c = [2]

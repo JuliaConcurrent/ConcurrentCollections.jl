@@ -3,7 +3,7 @@ module TestWorkStealingDeque
 using ConcurrentCollections
 using Test
 
-@testset "single thread push/pop" begin
+function var"test_single thread push/pop"()
     deque = WorkStealingDeque{Int}()
     xs = 1:50
     foldl(push!, xs; init = deque)
@@ -62,7 +62,7 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
     return zs, fetch.(tasks)
 end
 
-@testset "random push/pop" begin
+function var"test_random push/pop"()
     @testset for T in [Int, Any, Int, Any]
         # xs = 1:2^20
         xs = 1:2^10

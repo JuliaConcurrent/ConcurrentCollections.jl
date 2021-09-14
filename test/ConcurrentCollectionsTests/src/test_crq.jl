@@ -4,9 +4,10 @@ using Base.Experimental: @sync
 using ConcurrentCollections
 using ConcurrentCollections.Implementations:
     CRQSlot, IndirectConcurrentRingQueueNode, trypush!, isclosed
+using ProgressLogging: @logprogress, @withprogress
 using Test
 
-@testset "CRQSlot" begin
+function var"test_CRQSlot"()
     for index in [111, 222],
         safe in [false, true],
         storage in UInt32[0xaaa, 0xbbb]
@@ -127,32 +128,39 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-@testset "concurrent push-pop" begin
-    @testset for trial in 1:100
-        global received, notfound, dups, allreceived
-        nsend = cld(Threads.nthreads(), 2)
-        nrecv = max(1, Threads.nthreads() - nsend)
-        crq = IndirectConcurrentRingQueueNode{Int16}(32)
-        global CRQ = crq
-        nitems = 2^20
-        nitems = typemax(Int16)
-        received, senders, receivers = concurrent_denqueue!(crq, nitems, nsend, nrecv)
-        allreceived = reduce(vcat, received)
-
-        if isclosed(crq)
-            @info "CRQ closed. Skipping the tests..."
-            continue
+function test_concurrent_push_pop(ntrials = 100)
+    @withprogress name = "concurrent push-pop" begin
+        @testset for trial in 1:ntrials
+            @logprogress (trial - 1) / ntrials
+            check_concurrent_push_pop()
         end
-
-        @test [fetch(t).allpushed for t in senders] == fill(true, nsend)
-
-        sort!(allreceived)
-        (; notfound, dups) = check_consecutive(allreceived)
-        @test length(allreceived) == nitems
-        @test notfound == []
-        @test dups == []
-        @test allreceived == 1:nitems
     end
+end
+
+function check_concurrent_push_pop()
+    global received, notfound, dups, allreceived
+    nsend = cld(Threads.nthreads(), 2)
+    nrecv = max(1, Threads.nthreads() - nsend)
+    crq = IndirectConcurrentRingQueueNode{Int16}(32)
+    global CRQ = crq
+    nitems = 2^20
+    nitems = typemax(Int16)
+    received, senders, receivers = concurrent_denqueue!(crq, nitems, nsend, nrecv)
+    allreceived = reduce(vcat, received)
+
+    if isclosed(crq)
+        @info "CRQ closed. Skipping the tests..."
+        return
+    end
+
+    @test [fetch(t).allpushed for t in senders] == fill(true, nsend)
+
+    sort!(allreceived)
+    (; notfound, dups) = check_consecutive(allreceived)
+    @test length(allreceived) == nitems
+    @test notfound == []
+    @test dups == []
+    @test allreceived == 1:nitems
 end
 
 end  # module

@@ -2,15 +2,16 @@ module TestLCRQ
 
 using Base.Experimental: @sync
 using ConcurrentCollections
+using ProgressLogging: @logprogress, @withprogress
 using Test
 
-@testset "push-pop once" begin
+function var"test_push-pop once"()
     q = LinkedConcurrentRingQueue{Int}()
     push!(q, 111)
     @test trypopfirst!(q) == Some(111)
 end
 
-@testset "push-pop 100" begin
+function var"test_push-pop 100"()
     n = 100
     q = LinkedConcurrentRingQueue{Int}()
     foldl(push!, 1:n; init = q)
@@ -70,25 +71,31 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-@testset "concurrent push-pop" begin
-    if Threads.nthreads() > 1
-        @testset for trial in 1:100
-            nsend = cld(Threads.nthreads(), 2)
-            nrecv = Threads.nthreads() - nsend
-            @assert nsend ≥ 1
-            @assert nrecv ≥ 1
-            q = LinkedConcurrentRingQueue{Int}(32)
-            nitems = 2^20
-            received = concurrent_push_pop!(q, nitems, nsend, nrecv)
-            allreceived = reduce(vcat, received)
-            @test length(allreceived) == nitems
-            sort!(allreceived)
-            (; notfound, dups) = check_consecutive(allreceived)
-            @test notfound == []
-            @test dups == []
-            @test allreceived == 1:nitems
+function test_concurrent_push_pop(ntrials = 100)
+    Threads.nthreads() > 1 || return
+    @withprogress name = "concurrent push-pop" begin
+        @testset for trial in 1:ntrials
+            @logprogress (trial - 1) / ntrials
+            check_concurrent_push_pop()
         end
     end
+end
+
+function check_concurrent_push_pop()
+    nsend = cld(Threads.nthreads(), 2)
+    nrecv = Threads.nthreads() - nsend
+    @assert nsend ≥ 1
+    @assert nrecv ≥ 1
+    q = LinkedConcurrentRingQueue{Int}(32)
+    nitems = 2^20
+    received = concurrent_push_pop!(q, nitems, nsend, nrecv)
+    allreceived = reduce(vcat, received)
+    @test length(allreceived) == nitems
+    sort!(allreceived)
+    (; notfound, dups) = check_consecutive(allreceived)
+    @test notfound == []
+    @test dups == []
+    @test allreceived == 1:nitems
 end
 
 end  # module

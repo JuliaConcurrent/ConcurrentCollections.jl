@@ -8,9 +8,10 @@ using ConcurrentCollections.Implementations:
     MPCRQ_ENQUEUED,
     Waiter,
     denqueue!
+using ProgressLogging: @logprogress, @withprogress
 using Test
 
-@testset "close" begin
+function var"test_close"()
     crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(3)
     @testset for i in 1:8
         @test denqueue!(crq, i) === MPCRQ_ENQUEUED
@@ -137,26 +138,32 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-@testset "concurrent push-pop" begin
-    @testset for trial in 1:100
-        # @show trial
-        global received, notfound, dups, allreceived
-        nsend = cld(Threads.nthreads(), 2)
-        nrecv = max(1, Threads.nthreads() - nsend)
-        crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(7)
-        global CRQ = crq
-        nitems = 2^20
-        received, senders, receivers = concurrent_denqueue!(crq, nitems, nsend, nrecv)
-        allreceived = reduce(vcat, received)
-
-        @test length(allreceived) == nitems
-        sort!(allreceived)
-        (; notfound, dups) = check_consecutive(allreceived)
-        @test length(allreceived) == nitems
-        @test notfound == []
-        @test dups == []
-        @test allreceived == 1:nitems
+function test_concurrent_push_pop(ntrials = 100)
+    @withprogress name = "concurrent push-pop" begin
+        @testset for trial in 1:ntrials
+            @logprogress (trial - 1) / ntrials
+            check_concurrent_push_pop()
+        end
     end
+end
+
+function check_concurrent_push_pop()
+    global received, notfound, dups, allreceived
+    nsend = cld(Threads.nthreads(), 2)
+    nrecv = max(1, Threads.nthreads() - nsend)
+    crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(7)
+    global CRQ = crq
+    nitems = 2^20
+    received, senders, receivers = concurrent_denqueue!(crq, nitems, nsend, nrecv)
+    allreceived = reduce(vcat, received)
+
+    @test length(allreceived) == nitems
+    sort!(allreceived)
+    (; notfound, dups) = check_consecutive(allreceived)
+    @test length(allreceived) == nitems
+    @test notfound == []
+    @test dups == []
+    @test allreceived == 1:nitems
 end
 
 end  # module

@@ -1,9 +1,15 @@
+name = "ConcurrentCollectionsTests"
+uuid = "b7fbf168-c556-43a0-bc7b-f61cbc17117d"
+authors = ["Takafumi Arakaki <aka.tkf@gmail.com> and contributors"]
+version = "0.1.0-DEV"
+
 [deps]
-BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
+ConcurrentCollectionsBenchmarks = "172d371b-ba13-4e7e-a6ad-f169f5735fdf"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Formatting = "59287772-0a20-5a39-b81b-1366585eb4c0"
 ProgressLogging = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-TestFunctionRunner = "792026f5-ac9a-4a19-adcb-47b0ce2deb5d"
+
+[compat]
+julia = "1"
