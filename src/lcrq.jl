@@ -10,34 +10,6 @@ bool(x::Int32Bool) = x.bits > 0
 setbool(x::Int32Bool, b::Bool) = Int32Bool(int(x), b)
 setint(x::Int32Bool, i::Int32) = Int32Bool(i, bool(x))
 
-struct ICRQIndex
-    bits::UInt32
-end
-
-const THREADINDEX_BITS32 = 8
-const ITEMINDEX_BITS32 = 32 - THREADINDEX_BITS32
-
-function ICRQIndex(; threadindex, itemindex)
-    local bits::UInt32
-    # threadindex ≥ 1 << THREADINDEX_BITS32 && error("threadindex too large $threadindex")
-    # itemindex ≥ 1 << ITEMINDEX_BITS32 && error("itemindex too large $itemindex")
-    bits = UInt32(threadindex) << ITEMINDEX_BITS32
-    bits |= UInt32(itemindex) & (typemax(UInt32) >> THREADINDEX_BITS32)
-    return ICRQIndex(bits)
-end
-
-@inline function Base.getproperty(idx::ICRQIndex, name::Symbol)
-    if name === :threadindex
-        bits = getfield(idx, :bits)
-        return (bits >> (32 - 8)) % Int32
-    elseif name === :itemindex
-        bits = getfield(idx, :bits)
-        return (bits & (typemax(UInt32) >> 8)) % Int32
-    else
-        return getfield(idx, name)
-    end
-end
-
 struct CRQSlot{S}
     index_safe::Int32Bool
     storage::S  # sizeof(S) ≤ 4
@@ -74,17 +46,15 @@ mutable struct IndirectConcurrentRingQueueNode{T}
     @atomic tail_closed::Int32
     _tail_pad::PadAfter32
     @atomic next::Union{Nothing,IndirectConcurrentRingQueueNode{T}}
-    ring::Vector{CRQSlot{ICRQIndex}}
+    ring::Vector{CRQSlot{UInt32}}
     length::Int
     buffers::Vector{Vector{T}}
-    buffertails::Vector{Int}
 end
 # TODO: pad
 
 function IndirectConcurrentRingQueueNode{T}(len::Int) where {T}
-    buffers = [Vector{T}(undef, 2len) for _ in 1:Threads.nthreads()]
-    buffertails = fill(1, Threads.nthreads())
-    ring = [CRQSlot(Int32Bool(Int32(i), true), ICRQIndex(0)) for i in 1:len]
+    buffers = [Vector{T}(undef, len) for _ in 1:Threads.nthreads()]
+    ring = [CRQSlot(Int32Bool(Int32(i), true), UInt32(0)) for i in 1:len]
     head = Int32(1)
     tail_closed = Int32(1)
     return IndirectConcurrentRingQueueNode(
@@ -96,7 +66,6 @@ function IndirectConcurrentRingQueueNode{T}(len::Int) where {T}
         ring,
         len,
         buffers,
-        buffertails,
     )
 end
 
@@ -136,7 +105,7 @@ function trypush!(crq::IndirectConcurrentRingQueueNode, x)
 
     starvation_ctr = 0
     while true
-        t = @atomic crq.tail_closed += true
+        t = (@atomic crq.tail_closed += true) - true
         if isclosed(crq, t)
             return false  # closed
         elseif t ≥ typemax(Int32) - Threads.nthreads()
@@ -146,21 +115,22 @@ function trypush!(crq::IndirectConcurrentRingQueueNode, x)
             _close(crq, t)
             return false  # closed
         end
-        slotptr = pointer(crq.ring, mod1(t, crq.length))
-        slot = UnsafeAtomics.load(slotptr)::CRQSlot{ICRQIndex}
+        # TODO: use shift like DLCRQ
+        itemindex = mod1(t, crq.length)
+        slotptr = pointer(crq.ring, itemindex)
+        slot = UnsafeAtomics.load(slotptr)::CRQSlot{UInt32}
         (; index, safe, storage) = slot
-        if iszero(storage.bits)
+        if iszero(storage)
             if (index ≤ t) && (safe || (@atomic crq.head) ≤ t)
                 tid = Threads.threadid()
                 buffer = crq.buffers[tid]
-                localtail = crq.buffertails[tid] + 1
-                itemindex = mod1(localtail, length(buffer))
-                buffer[itemindex] = x  # [^itemindex]
-                bidx = ICRQIndex(; threadindex = tid, itemindex)
-                newslot = CRQSlot(; safe = true, index = t, storage = bidx)
+                buffer[itemindex] = x
+                storage = UInt32(tid)
+                # storage = _embed(UInt32, x)
+                @assert !iszero(storage)
+                newslot = CRQSlot(; safe = true, index = t, storage)
                 old = UnsafeAtomics.cas!(slotptr, slot, newslot)
                 if old == slot
-                    crq.buffertails[tid] = localtail
                     return true
                 end
             end
@@ -173,27 +143,20 @@ function trypush!(crq::IndirectConcurrentRingQueueNode, x)
         GC.safepoint()  # must not yield
     end
 end
-# [^itemindex]: `buffer[itemindex] = x` is OK since there is no other thread
-# that can write to this memory location.  Using `length(ring) ==
-# length(buffer)` is OK since at this point we know that there is at least one
-# empty slot and only other threads can make the `ring` full.  However, other
-# threads need to put the item in their own buffer.
-# TODO: So, 2len -> len
-# TODO: This reasoning was wrong in the Dual LCRQ. It may be due to calls to
-# denqueue stalled right after FAI (handled with the `safe` bit). Check if
-# something similar is possible in LCRQ and stop using `ICRQIndex` if so.
 
 function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode)
     while true
-        h = @atomic crq.head += true
-        slotptr = pointer(crq.ring, mod1(h, crq.length))
+        h = (@atomic crq.head += true) - true
+        itemindex = mod1(h, crq.length)  # TODO: shift
+        slotptr = pointer(crq.ring, itemindex)
         while true
-            slot = UnsafeAtomics.load(slotptr)::CRQSlot{ICRQIndex}
+            slot = UnsafeAtomics.load(slotptr)::CRQSlot{UInt32}
             (; index, safe, storage) = slot
-            if !iszero(storage.bits)
+            if !iszero(storage)
                 if index == h
-                    (; threadindex, itemindex) = storage
+                    threadindex = storage
                     x = crq.buffers[threadindex][itemindex]
+                    # x = _extract(eltype(crq), storage)
                     # Above load requires "tearable atomics" for immutables; for
                     # boxed Julia objects (i.e., pointer), it's probably
                     # equivalent to asking the compiler to not root `x` until
@@ -201,8 +164,7 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
                     # before reading the type tag. (That said, currently it may
                     # not be a problem since GC stops all tasks?)
 
-                    newslot =
-                        CRQSlot(; safe, index = h + crq.length, storage = ICRQIndex(0))
+                    newslot = CRQSlot(; safe, index = h + crq.length, storage = UInt32(0))
                     old = UnsafeAtomics.cas!(slotptr, slot, newslot)
                     if old === slot
                         return Some{eltype(crq)}(x)
@@ -215,7 +177,8 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
                     end
                 end
             else  # empty slot
-                newslot = CRQSlot(; safe, index = index + crq.length, storage)
+                # `max(h, index)` for dealing with tasks stalled after FAI [^maxh]
+                newslot = CRQSlot(; safe, index = max(h, index) + crq.length, storage)
                 old = UnsafeAtomics.cas!(slotptr, slot, newslot)
                 if old == slot
                     break
@@ -232,6 +195,15 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
         end
     end
 end
+# [^maxh]: `max(h, index)` was not mentioned in Morrison and Afek (2013) (or its
+# revised version) so it's not clear if this is needed.  However, it is possible
+# that multiple enqueuers and/or dequeuers that would have incremented the
+# `slot.index` is suspended just after the FAI.  If so, `slot.index` can be a
+# round (or even multiple rounds) behind the current `crq.head`.  So, it seems
+# like we need to prevent the enqueuing to this index (hence missing the item)
+# by moving this to the next round.
+#
+# TODO: Is it OK to skip updating the slot if `index > h`?
 
 function fixstate!(crq::IndirectConcurrentRingQueueNode)
     while true
@@ -325,16 +297,14 @@ function Base.show(io::IO, ::MIME"text/plain", crq::IndirectConcurrentRingQueueN
     print(io, "CRQ: $nitems item(s) (status: $status, head: $h, tail: $t)")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", index::ICRQIndex)
-    if get(io, :typeinfo, Any) !== typeof(index)
-        invoke(show, Tuple{IO,MIME"text/plain",Any}, io, MIME"text/plain"(), index)
-        return
+function Base.NamedTuple(slot::CRQSlot)
+    (; index, safe, storage) = slot
+    return (; index, safe, storage)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", slot::CRQSlot)
+    if get(io, :typeinfo, Any) !== typeof(slot)
+        show(io, MIME"text/plain"(), typeof(slot))
     end
-    if iszero(index.bits)
-        print(io, "#null")
-        return
-    end
-    (; threadindex, itemindex) = index
-    nt = (; threadindex, itemindex)
-    show(io, MIME"text/plain"(), nt)
+    show(io, MIME"text/plain"(), NamedTuple(slot))
 end
