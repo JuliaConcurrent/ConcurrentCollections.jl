@@ -6,7 +6,7 @@ using ConcurrentCollections.Implementations:
     MPCRQSlot, DATA, ANTIDATA, denqueue!, MPCRQ_ENQUEUED
 using Test
 
-@testset "MPCRQSlot" begin
+function var"test_MPCRQSlot"()
     for index in [111, 222],
         safe in [false, true],
         polarity in [DATA, ANTIDATA],
@@ -17,13 +17,13 @@ using Test
     end
 end
 
-@testset "push-pop once" begin
+function var"test_push-pop once"()
     q = DualLinkedConcurrentRingQueue{Int}()
     push!(q, 111)
     @test popfirst!(q) == 111
 end
 
-@testset "push-pop 100" begin
+function var"test_push-pop 100"()
     n = 100
     q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 3)
     foldl(push!, 1:n; init = q)
@@ -35,7 +35,7 @@ end
     @test ys == 1:n
 end
 
-@testset "push-pop 100 wait first" begin
+function var"test_push-pop 100 wait first"()
     n = 100
     q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 3)
     task = Threads.@spawn begin
@@ -52,7 +52,7 @@ end
     @test ys == 1:n
 end
 
-@testset "push-pop 100 inline" begin
+function var"test_push-pop 100 inline"()
     n = 100
     q = DualLinkedConcurrentRingQueue{Int16}(; log2ringsize = 3)
     @test q.data.data === nothing
@@ -121,7 +121,7 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-@testset "concurrent push-pop" begin
+function var"test_concurrent push-pop"()
     @testset for trial in 1:100
         # @show trial
         nsend = cld(Threads.nthreads(), 2)

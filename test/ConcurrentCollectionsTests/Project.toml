@@ -1,0 +1,14 @@
+name = "ConcurrentCollectionsTests"
+uuid = "b7fbf168-c556-43a0-bc7b-f61cbc17117d"
+authors = ["Takafumi Arakaki <aka.tkf@gmail.com> and contributors"]
+version = "0.1.0-DEV"
+
+[deps]
+ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
+ConcurrentCollectionsBenchmarks = "172d371b-ba13-4e7e-a6ad-f169f5735fdf"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Formatting = "59287772-0a20-5a39-b81b-1366585eb4c0"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+julia = "1"

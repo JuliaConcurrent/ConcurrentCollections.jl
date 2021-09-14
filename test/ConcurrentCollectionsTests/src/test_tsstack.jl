@@ -3,7 +3,7 @@ module TestTSStack
 using ConcurrentCollections
 using Test
 
-@testset begin
+function test_simple()
     stack = ConcurrentStack{Int}()
     xs = 1:10
     foldl(push!, xs; init = stack)
@@ -42,7 +42,7 @@ function pushpop(xs, ntasks = Threads.nthreads())
     return fetch.(tasks), stack
 end
 
-@testset "push/pop" begin
+function var"test_push/pop"()
     @testset for T in [Int, Any, Int, Any]
         xs = 1:2^10
         if T !== eltype(xs)

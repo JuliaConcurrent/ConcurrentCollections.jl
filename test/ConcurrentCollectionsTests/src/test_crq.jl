@@ -6,7 +6,7 @@ using ConcurrentCollections.Implementations:
     CRQSlot, IndirectConcurrentRingQueueNode, trypush!, isclosed
 using Test
 
-@testset "CRQSlot" begin
+function var"test_CRQSlot"()
     for index in [111, 222],
         safe in [false, true],
         storage in UInt32[0xaaa, 0xbbb]
@@ -127,7 +127,7 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-@testset "concurrent push-pop" begin
+function var"test_concurrent push-pop"()
     @testset for trial in 1:100
         global received, notfound, dups, allreceived
         nsend = cld(Threads.nthreads(), 2)

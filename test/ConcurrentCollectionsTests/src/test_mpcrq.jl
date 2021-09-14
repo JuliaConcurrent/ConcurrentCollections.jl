@@ -10,7 +10,7 @@ using ConcurrentCollections.Implementations:
     denqueue!
 using Test
 
-@testset "close" begin
+function var"test_close"()
     crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(3)
     @testset for i in 1:8
         @test denqueue!(crq, i) === MPCRQ_ENQUEUED
@@ -137,7 +137,7 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-@testset "concurrent push-pop" begin
+function var"test_concurrent push-pop"()
     @testset for trial in 1:100
         # @show trial
         global received, notfound, dups, allreceived

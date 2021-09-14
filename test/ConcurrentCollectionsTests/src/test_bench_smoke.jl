@@ -3,7 +3,7 @@ module TestBenchSmoke
 using Test
 using ConcurrentCollectionsBenchmarks: clear, setup_smoke
 
-@testset "smoke test benchmarks" begin
+function var"test_smoke test benchmarks"()
     try
         local suite
         @test (suite = setup_smoke()) isa Any

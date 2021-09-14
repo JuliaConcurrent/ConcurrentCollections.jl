@@ -4,13 +4,13 @@ using Base.Experimental: @sync
 using ConcurrentCollections
 using Test
 
-@testset "push-pop once" begin
+function var"test_push-pop once"()
     q = LinkedConcurrentRingQueue{Int}()
     push!(q, 111)
     @test trypopfirst!(q) == Some(111)
 end
 
-@testset "push-pop 100" begin
+function var"test_push-pop 100"()
     n = 100
     q = LinkedConcurrentRingQueue{Int}()
     foldl(push!, 1:n; init = q)
@@ -70,7 +70,7 @@ function check_consecutive(xs)
     return (; notfound, dups)
 end
 
-@testset "concurrent push-pop" begin
+function var"test_concurrent push-pop"()
     if Threads.nthreads() > 1
         @testset for trial in 1:100
             nsend = cld(Threads.nthreads(), 2)

@@ -1,10 +1,16 @@
-module TestDict
+module DontTestDict
 
 using ConcurrentCollections
 using ConcurrentCollections.Implementations: clusters
 using Test
 
-@testset for npairs in [2, 100]
+function test_dict()
+    @testset for npairs in [2, 100]
+        test_dict(npairs)
+    end
+end
+
+function test_dict(npairs)
     @testset for Key in [Int8, Int32, Int64], Value in [Int]
         d = ConcurrentDict{Key,Value}()
         @testset for trial in 1:2
@@ -83,7 +89,7 @@ using Test
     end
 end
 
-@testset "ConcurrentDict(key => value, ...)" begin
+function var"test_ConcurrentDict(key => value, ...)"()
     @testset for Key in [Int8, Int32, Int64], Value in [Int]
         @testset "$label" for (label, dict) in [
             "ConcurrentDict{_,_}(_ => _, ...)" =>
@@ -101,7 +107,7 @@ end
     end
 end
 
-@testset "shrink" begin
+function test_shrink()
     @testset for Key in [Int8, Int32, Int64], Value in [Int]
         ks = vs = 1:100
         d = ConcurrentDict{Key,Value}(zip(ks, vs))

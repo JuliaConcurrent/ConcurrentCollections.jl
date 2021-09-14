@@ -3,7 +3,7 @@ module TestMSQueue
 using ConcurrentCollections
 using Test
 
-@testset begin
+function test_simple()
     q = ConcurrentQueue{Int}()
     xs = 1:10
     foldl(push!, xs; init = q)
@@ -42,7 +42,7 @@ function pushpop(xs, ntasks = Threads.nthreads())
     return fetch.(tasks), queue
 end
 
-@testset "push/pop" begin
+function var"test_push/pop"()
     @testset for T in [Int, Any, Int, Any]
         xs = 1:2^10
         if T !== eltype(xs)
