@@ -155,14 +155,8 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
             if !iszero(storage)
                 if index == h
                     threadindex = storage
-                    x = crq.buffers[threadindex][itemindex]
+                    x = crq.buffers[threadindex][itemindex]  # [^crq.buffers]
                     # x = _extract(eltype(crq), storage)
-                    # Above load requires "tearable atomics" for immutables; for
-                    # boxed Julia objects (i.e., pointer), it's probably
-                    # equivalent to asking the compiler to not root `x` until
-                    # the CAS succeed so that there is an acquire ordering
-                    # before reading the type tag. (That said, currently it may
-                    # not be a problem since GC stops all tasks?)
 
                     newslot = CRQSlot(; safe, index = h + crq.length, storage = UInt32(0))
                     old = UnsafeAtomics.cas!(slotptr, slot, newslot)
@@ -195,6 +189,16 @@ function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode
         end
     end
 end
+# [^crq.buffers]: Above read `x = crq.buffers[threadindex][itemindex]` (from
+# `itemindex`) is fine without atomics. At this point, the load from the
+# corresponding slot (`crq.ring[itemindex]`) has established the happens-before
+# edge to the corresponding enqueue.  Since it has been confirmed that the
+# storage is non-empty and `h == index`, there cannot be any more concurrent
+# writes by the "current" or "past" enqueuers with `tail ≤ h`. The "future"
+# enqueuers with `tail > h` will not touch the buffer until the slot is emptied
+# by the CAS after this load. Since this dequeuer obtained the exclusive access
+# to the index `h`, there's no other dequeuers trying the same CAS.
+#
 # [^maxh]: `max(h, index)` was not mentioned in Morrison and Afek (2013) (or its
 # revised version) so it's not clear if this is needed.  However, it is possible
 # that multiple enqueuers and/or dequeuers that would have incremented the
