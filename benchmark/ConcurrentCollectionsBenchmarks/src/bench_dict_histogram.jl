@@ -37,6 +37,9 @@ function hist_seq!(dict::ConcurrentDict, data)
 end
 
 function hist_parallel!(dict::ConcurrentDict, data; ntasks = Threads.nthreads())
+    # for k in data
+    #     dict[k] = 0
+    # end
     @sync for chunk in Iterators.partition(data, cld(length(data), ntasks))
         Threads.@spawn hist_seq!(dict, chunk)
     end

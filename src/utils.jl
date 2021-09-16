@@ -26,66 +26,6 @@ function ceillog2(n::Integer)
     end
 end
 
-struct Inlined{T}
-    x::T
-end
-
-@inline Base.convert(::Type{Inlined{T}}, x::T) where {T} = Inlined{T}(x)
-
-function new_ipadder end
-
-struct IPadder{T,Pad}
-    x::T
-    pad::NTuple{Pad,UInt8}
-    global new_ipadder(x::T, ::Type{T}, ::Val{Pad}) where {T,Pad} =
-        new{T,Pad}(x, ntuple(_ -> 0, Val(Pad)))
-end
-
-@inline IPadder{T,Pad}(args...) where {T,Pad} = new_ipadder(T(args...), T, Val(Pad))
-
-padsize(::Type{IPadder{T,Pad}}) where {T,Pad} = Pad
-padsize(padder::IPadder) = padsize(typeof(padder))
-
-function Base.show(io::IO, padder::IPadder)
-    @nospecialize padder
-    print(io, "IPadder{_,", length(padder.pad), "}(")
-    show(io, padder.x)
-    print(io, ")")
-end
-
-paddee(::Type{<:IPadder{T}}) where {T} = T
-refee(::Type{<:Ref{T}}) where {T} = T
-
-# paddee(::T) where {T} = paddee(T)
-# @noinline paddee(T::Type) = unreachable()
-
-@inline Base.convert(::Type{P}, x::T) where {T,Pad,P<:IPadder{T,Pad}} = P(x)
-# Base.convert(::Type{T}, x::IPadder{<:T}) where {T} = x.x
-
-function cas_compatible(::Type{T}) where {T}
-    if aligned_sizeof(T) <= 16
-        T
-    else
-        nothing
-    end
-end
-
-function padsize_for_cas(::Type{T}) where {T}
-    if sizeof(T) <= 1
-        return 0
-    elseif sizeof(T) <= 2
-        return 2 - sizeof(T)
-    elseif sizeof(T) <= 4
-        return 4 - sizeof(T)
-    elseif sizeof(T) <= 8
-        return 8 - sizeof(T)
-    elseif sizeof(T) <= 16
-        return 16 - sizeof(T)
-    else
-        return 0  # should be handled by the caller
-    end
-end
-
 @inline function uint_for(::Type{T}) where {T}
     if sizeof(T) <= 1
         return UInt8
@@ -122,7 +62,7 @@ end
     PaddedRef{T,sizeof(Desired) - sizeof(T)}()
 
 function from_bytes(::Type{T}, uint::UIntType) where {T,UIntType}
-    isinlinable(T) || @static_error("expected isbits or union of them")
+    Base.allocatedinline(T) || @static_error("expected isbits or union of them")
     let ref = paddedref(T, UIntType)
         GC.@preserve ref begin
             unsafe_store!(Ptr{UIntType}(pointer_from_objref(ref)), uint)
@@ -149,65 +89,6 @@ function UnsafeAtomics.cas!(p::Ptr{T}, cmp::T, new::T, so::Val, fo::Val) where {
     q = Ptr{typeof(ci)}(p)
     oi = UnsafeAtomics.cas!(q, ci, ni, so, fo)
     return from_bytes(T, oi)
-end
-
-@inline isinlinable(::Type{Inlined{T}}) where {T} = isinlinable(T)
-@inline isinlinable(T::Type) = Base.isbitstype(T) || Base.isbitsunion(T)
-
-@inline function zerofill(::Type{T}) where {T}
-    if Base.isbitstype(T)
-        return zerofill!(Ref{T}())[]
-    elseif Base.isbitsunion(T)
-        return zerofill(T.a)
-    else
-        _error_zerofill(T)
-    end
-end
-
-@noinline _error_zerofill(T) = error("cannot zero-fill non-isbit type $T")
-
-@inline function zerofill!(ref::Ref{T}) where {T}
-    GC.@preserve ref begin
-        unsafe_zerofill!(pointer_from_objref(ref), Val(sizeof(T)))
-    end
-    return ref
-end
-
-@generated function unsafe_zerofill!(ptr::Ptr{Cvoid}, ::Val{Bytes}) where {Bytes}
-    IR = (
-        """
-        define void @entry(i$(Base.Sys.WORD_SIZE) %0) #0 {
-        top:
-            %ptr = inttoptr i$(Base.Sys.WORD_SIZE) %0 to i8*
-            call void @llvm.memset.p0i8.i32(i8* %ptr, i8 0, i32 $Bytes, i1 0)
-            ret void
-        }
-
-        declare void @llvm.memset.p0i8.i32(i8*, i8, i32, i1)
-
-        attributes #0 = { alwaysinline }
-        """,
-        "entry",
-    )
-    quote
-        $(Expr(:meta, :inline))
-        Base.llvmcall($IR, Cvoid, Tuple{Ptr{Cvoid}}, ptr)
-    end
-end
-
-@generated allocate_singleton_ref(::Type{T}) where {T} = Ref{Any}(T.instance)
-
-@inline function pointer_from_singleton(::T) where {T}
-    refptr = pointer_from_objref(allocate_singleton_ref(T))
-    return unsafe_load(Ptr{Ptr{Cvoid}}(refptr))
-end
-
-@inline function _pointer_from_objref(obj::T) where {T}
-    if Base.issingletontype(T)
-        return pointer_from_singleton(obj)
-    else
-        return pointer_from_objref(obj)
-    end
 end
 
 # Read /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size?
