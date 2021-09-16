@@ -3,22 +3,17 @@
 ```@index
 ```
 
-## Collections
+## Queue/stack
 
 ```@docs
 ConcurrentQueue
 ConcurrentStack
 WorkStealingDeque
-```
-
-## Functions
-
-```@docs
 trypop!
 trypopfirst!
 ```
 
-## Experimental
+## Hash table
 
 ```@docs
 ConcurrentDict
