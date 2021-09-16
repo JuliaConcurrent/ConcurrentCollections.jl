@@ -1,6 +1,5 @@
 module ConcurrentCollectionsTests
 
-include("test_atomicsutils.jl")
 include("test_bench_dict_histogram.jl")
 include("test_bench_smoke.jl")
 include("test_crq.jl")
