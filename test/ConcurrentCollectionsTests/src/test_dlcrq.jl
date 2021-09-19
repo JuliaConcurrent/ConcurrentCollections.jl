@@ -24,6 +24,23 @@ function var"test_push-pop once"()
     @test popfirst!(q) == 111
 end
 
+function test_error()
+    q = DualLinkedConcurrentRingQueue{Int}()
+    t = @task popfirst!(q)
+    yield(t)
+    msg = "Interrupting DLCRQ @$(time_ns())"
+    schedule(t, ErrorException(msg); error = true)
+    err = try
+        Some(wait(t))
+    catch e
+        e
+    end
+    @test err isa TaskFailedException
+    @test occursin(msg, sprint(showerror, err))
+    push!(q, 111)  # this dequeues but ignores the interrupted waiter
+    @test popfirst!(q) == 111
+end
+
 function var"test_push-pop 100"()
     n = 100
     q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 3)
