@@ -6,6 +6,8 @@
 ## Queue/stack
 
 ```@docs
+DualLinkedConcurrentRingQueue
+LinkedConcurrentRingQueue
 ConcurrentQueue
 ConcurrentStack
 WorkStealingDeque
