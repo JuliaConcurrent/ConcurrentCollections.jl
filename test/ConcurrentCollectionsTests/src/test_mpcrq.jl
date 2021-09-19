@@ -7,7 +7,8 @@ using ConcurrentCollections.Implementations:
     MPCRQ_CLOSED,
     MPCRQ_ENQUEUED,
     Waiter,
-    denqueue!
+    denqueue!,
+    tryput!
 using ProgressLogging: @logprogress, @withprogress
 using Test
 
@@ -74,7 +75,8 @@ function concurrent_denqueue!(
                     y = denqueue!(crq, x)
                     y === MPCRQ_CLOSED && break
                     y === MPCRQ_ENQUEUED && continue
-                    put!(y::Waiter, x)
+                    local ok = tryput!(y::Waiter, x)
+                    @assert ok "tryput!(y::Waiter, x)"
                 end
                 return y, i
             end

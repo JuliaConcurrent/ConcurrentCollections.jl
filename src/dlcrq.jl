@@ -7,6 +7,7 @@
     WAITER_SATISFIED
     WAITER_FINISHED
     WAITER_TRASHED
+    WAITER_INTERRUPTED
 end
 
 mutable struct Waiter{T}
@@ -38,6 +39,23 @@ function reinit!(w::Waiter)
     return w
 end
 
+function set_interrupted!(w::Waiter, nspins::Integer = 100)
+    old, ok = @atomicreplace w.state WAITER_WAITING => WAITER_INTERRUPTED
+    for _ in 1:nspins
+        ok && break
+        old, ok = @atomicreplace w.state old => WAITER_INTERRUPTED
+        GC.safepoint()
+    end
+    if !ok
+        @atomic w.state = WAITER_INTERRUPTED
+    end
+    if !ok || old != WAITER_WAITING
+        # TODO: is `@warn` better?
+        @debug "an item lost" ok old
+    end
+    return old, ok
+end
+
 function Base.fetch(w::Waiter{T}; nspins::Integer = 0) where {T}
     for _ in 1:nspins
         if (@atomic w.state) == WAITER_SATISFIED
@@ -47,7 +65,14 @@ function Base.fetch(w::Waiter{T}; nspins::Integer = 0) where {T}
     end
 
     _, success = @atomicreplace w.state WAITER_INIT => WAITER_WAITING
-    success && wait()
+    if success
+        try
+            wait()
+        catch
+            set_interrupted!(w)
+            rethrow()
+        end
+    end
 
     @label satisifed
     let old = @atomic w.state
@@ -65,7 +90,7 @@ function Base.fetch(w::Waiter{T}; nspins::Integer = 0) where {T}
     return x::T
 end
 
-function Base.put!(w::Waiter{T}, x::T) where {T}
+function tryput!(w::Waiter{T}, x::T) where {T}
     # Before the CAS, `put!` owns the field `.value`:
     w.value = x
 
@@ -73,6 +98,8 @@ function Base.put!(w::Waiter{T}, x::T) where {T}
     while true
         if old == WAITER_WAITING
             new = WAITER_NOTIFYING
+        elseif old == WAITER_INTERRUPTED
+            return false
         else
             @assert old == WAITER_INIT "required old == WAITER_INIT but old = $old"
             new = WAITER_SATISFIED
@@ -82,7 +109,7 @@ function Base.put!(w::Waiter{T}, x::T) where {T}
             if old == WAITER_WAITING
                 schedule(w.task::Task)
             end
-            return
+            return true
         end
     end
 end
@@ -338,6 +365,9 @@ function denqueue!(
                         if x isa Waiter{T}
                             return Some(y)
                         else
+                            if (@atomic y.state) == WAITER_INTERRUPTED
+                                break  # try the next slot
+                            end
                             return y
                         end
                     end
@@ -494,13 +524,15 @@ Base.eltype(::Type{<:DualLinkedConcurrentRingQueue{T}}) where {T} = T
 
 function Base.push!(lcrq::DualLinkedConcurrentRingQueue{T}, x) where {T}
     x = convert(eltype(lcrq), x)
-    y = denqueue!(lcrq, x)
-    if y isa Waiter{T}
-        put!(y, x)
-    else
-        @assert y === MPCRQ_ENQUEUED
+    while true
+        y = denqueue!(lcrq, x)
+        if y isa Waiter{T}
+            tryput!(y, x) || continue
+        else
+            @assert y === MPCRQ_ENQUEUED
+        end
+        return lcrq
     end
-    return lcrq
 end
 
 function Base.popfirst!(lcrq::DualLinkedConcurrentRingQueue{T}) where {T}
