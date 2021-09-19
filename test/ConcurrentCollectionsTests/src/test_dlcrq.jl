@@ -18,8 +18,14 @@ function var"test_MPCRQSlot"()
     end
 end
 
-function var"test_push-pop once"()
+function test_push_pop_once_int()
     q = DualLinkedConcurrentRingQueue{Int}()
+    push!(q, 111)
+    @test popfirst!(q) == 111
+end
+
+function test_push_pop_once_any()
+    q = DualLinkedConcurrentRingQueue()
     push!(q, 111)
     @test popfirst!(q) == 111
 end

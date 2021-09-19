@@ -363,7 +363,7 @@ function denqueue!(
                     old = UnsafeAtomics.cas!(slotptr, slot, newslot)
                     if old == slot
                         if x isa Waiter{T}
-                            return Some(y)
+                            return Some{T}(y)
                         else
                             if (@atomic y.state) == WAITER_INTERRUPTED
                                 break  # try the next slot
