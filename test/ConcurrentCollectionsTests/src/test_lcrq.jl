@@ -5,10 +5,16 @@ using ConcurrentCollections
 using ProgressLogging: @logprogress, @withprogress
 using Test
 
-function var"test_push-pop once"()
+function test_push_pop_once_int()
     q = LinkedConcurrentRingQueue{Int}()
     push!(q, 111)
     @test trypopfirst!(q) == Some(111)
+end
+
+function test_push_pop_once_any()
+    q = LinkedConcurrentRingQueue()
+    push!(q, 111)
+    @test trypopfirst!(q) == Some{Any}(111)
 end
 
 function var"test_push-pop 100"()
