@@ -365,9 +365,6 @@ function denqueue!(
                         if x isa Waiter{T}
                             return Some{T}(y)
                         else
-                            if (@atomic y.state) == WAITER_INTERRUPTED
-                                break  # try the next slot
-                            end
                             return y
                         end
                     end
