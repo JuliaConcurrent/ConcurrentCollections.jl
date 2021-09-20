@@ -146,6 +146,9 @@ function ConcurrentCollections.trypopfirst!(deque::WorkStealingDeque)
     else
         ptr = UnsafeAtomics.load(Ptr{Ptr{Cvoid}}(pointer(buffer, top)), monotonic)
         if @atomicreplace(deque.top, top => top + 1)[2]
+            # Safety: The above CAS verifies that the slot `buffer[top]`
+            # contained the valid element. We can now materialize it as a Julia
+            # value.
             GC.@preserve buffer begin
                 r = Some(unsafe_pointer_to_objref(ptr))
             end
