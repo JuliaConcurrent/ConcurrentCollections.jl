@@ -67,7 +67,7 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
 end
 
 function test_random_push_pop()
-    @testset for trial in 1:100
+    @testset for trial in 1:10000
         @testset for T in [Int, Any]
             test_random_push_pop(T)
         end
