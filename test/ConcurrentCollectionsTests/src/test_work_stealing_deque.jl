@@ -79,7 +79,9 @@ function test_random_push_pop(T::Type, xs = 1:2^10)
     @test all(allunique, yss)
     @debug "random_pushpop(xs)" length(zs) length.(yss)
     ys = sort!(foldl(append!, yss; init = copy(zs)))
-    @debug "random_pushpop(xs)" setdiff(ys, xs) setdiff(xs, ys) length(xs) length(ys)
+    @test length(xs) == length(ys)
+    @test setdiff(ys, xs) == []
+    @test setdiff(xs, ys) == []
     @test ys == xs
 end
 
