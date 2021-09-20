@@ -42,7 +42,7 @@ function pushpop(xs, ntasks = Threads.nthreads())
     return fetch.(tasks), queue
 end
 
-function var"test_push/pop"()
+function test_push_pop()
     @testset for T in [Int, Any, Int, Any]
         xs = 1:2^10
         if T !== eltype(xs)

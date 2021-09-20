@@ -173,7 +173,7 @@ function test_dict(npairs)
     end
 end
 
-function var"test_ConcurrentDict(key => value, ...)"()
+function test_pairs_constructor()
     @testset for Key in [Int8, Int32, Int64], Value in [Int]
         @testset "$label" for (label, dict) in [
             "ConcurrentDict{_,_}(_ => _, ...)" =>

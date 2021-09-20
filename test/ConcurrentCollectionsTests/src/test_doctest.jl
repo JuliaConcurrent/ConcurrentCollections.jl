@@ -4,7 +4,7 @@ import ConcurrentCollections
 using Documenter: doctest
 using Test
 
-function var"test_doctest"()
+function test_doctest()
     doctest(ConcurrentCollections)
 end
 
