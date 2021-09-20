@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         julia-version: ['~1.7.0-beta4', 'nightly']
-        nthreads: ['1', '2']
+        nthreads: ['1', '2', '3', '4']
       fail-fast: false
     name: Test Julia ${{ matrix.julia-version }} nthreads=${{ matrix.nthreads }}
     steps:

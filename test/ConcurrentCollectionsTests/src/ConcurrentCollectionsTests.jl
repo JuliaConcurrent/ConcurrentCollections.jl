@@ -13,7 +13,7 @@ include("test_tsstack.jl")
 include("test_work_stealing_deque.jl")
 
 function __init__()
-    @info "Starting test" Threads.nthreads()
+    @info "Starting test" Threads.nthreads() Sys.CPU_THREADS
 end
 
 end  # module ConcurrentCollectionsTests
