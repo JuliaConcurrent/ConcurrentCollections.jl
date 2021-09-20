@@ -5,6 +5,8 @@
 ConcurrentCollections.jl provides the following lock-free collections for Julia
 ≥ 1.8:
 
+* [`DualLinkedConcurrentRingQueue`](https://tkf.github.io/ConcurrentCollections.jl/dev/#ConcurrentCollections.DualLinkedConcurrentRingQueue)
+* [`LinkedConcurrentRingQueue`](https://tkf.github.io/ConcurrentCollections.jl/dev/#ConcurrentCollections.LinkedConcurrentRingQueue)
 * [`ConcurrentQueue`](https://tkf.github.io/ConcurrentCollections.jl/dev/#ConcurrentCollections.ConcurrentQueue)
 * [`ConcurrentStack`](https://tkf.github.io/ConcurrentCollections.jl/dev/#ConcurrentCollections.ConcurrentStack)
 * [`WorkStealingDeque`](https://tkf.github.io/ConcurrentCollections.jl/dev/#ConcurrentCollections.WorkStealingDeque)
