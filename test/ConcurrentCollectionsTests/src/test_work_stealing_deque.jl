@@ -85,6 +85,7 @@ function test_random_push_pop(T::Type, xs = 1:2^10)
     @test setdiff(ys, xs) == []
     @test setdiff(xs, ys) == []
     @test ys == xs
+    return (; zs, yss)
 end
 
 end  # module
