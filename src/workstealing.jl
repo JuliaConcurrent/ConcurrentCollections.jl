@@ -179,7 +179,7 @@ end
 # buffer is initialized less frequently (upon construction and resizes),
 # the `isassigned`-based strategy is not used.
 #
-# The current implementation also expecting that it is "OK" to load a
+# TODO: The current implementation also expects that it is "OK" to load a
 # pointerfree value non-atomically (it's a data race in C++20 memory model hence
 # an UB). A proper solution may be to store/load these values as a sequence of
 # `UInt`s with relaxed atomics and then type-pun `NTuple{_,UInt}` into the Julia
