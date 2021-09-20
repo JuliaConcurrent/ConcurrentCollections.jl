@@ -15,6 +15,13 @@ macro static_error(msg::AbstractString)
     :(static_error(Val{$(QuoteNode(sym))}()))
 end
 
+"""
+    is_pointerfree_type(T::Type) :: Bool
+
+Return `true` if any instances of `T` do not contain boxed Julia objects.
+"""
+is_pointerfree_type(::Type{T}) where {T} = isconcretetype(T) && Base.datatype_pointerfree(T)
+
 function ceillog2(n::Integer)
     n > 0 || throw(DomainError(n))
     i = trailing_zeros(n)
