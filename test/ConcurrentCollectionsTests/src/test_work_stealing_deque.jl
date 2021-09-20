@@ -36,6 +36,7 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
                 while true
                     r = trypopfirst!(deque)
                     if r === nothing
+                        GC.safepoint()
                         done[] && break
                         continue
                     end
@@ -51,6 +52,7 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
             # continue
             if mod(i, 8) == 0
                 r = trypop!(deque)
+                GC.safepoint()
                 r === nothing && continue
                 push!(zs, something(r))
             end
