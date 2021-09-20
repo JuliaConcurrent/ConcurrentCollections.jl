@@ -64,7 +64,7 @@ end
 
 function test_random_push_pop()
     @testset for trial in 1:100
-        @testset for T in [Int, Any, Int, Any]
+        @testset for T in [Int, Any]
             test_random_push_pop(T)
         end
     end
