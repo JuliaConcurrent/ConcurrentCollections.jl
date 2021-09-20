@@ -64,19 +64,21 @@ end
 
 function test_random_push_pop()
     @testset for T in [Int, Any, Int, Any]
-        # xs = 1:2^20
-        xs = 1:2^10
-        if T !== eltype(xs)
-            xs = collect(T, xs)
-        end
-        zs, yss = random_pushpop(xs)
-        @test allunique(zs)
-        @test all(allunique, yss)
-        @debug "random_pushpop(xs)" length(zs) length.(yss)
-        ys = sort!(foldl(append!, yss; init = copy(zs)))
-        @debug "random_pushpop(xs)" setdiff(ys, xs) setdiff(xs, ys) length(xs) length(ys)
-        @test ys == xs
+        test_random_push_pop(T)
     end
+end
+
+function test_random_push_pop(T::Type, xs = 1:2^10)
+    if T !== eltype(xs)
+        xs = collect(T, xs)
+    end
+    zs, yss = random_pushpop(xs)
+    @test allunique(zs)
+    @test all(allunique, yss)
+    @debug "random_pushpop(xs)" length(zs) length.(yss)
+    ys = sort!(foldl(append!, yss; init = copy(zs)))
+    @debug "random_pushpop(xs)" setdiff(ys, xs) setdiff(xs, ys) length(xs) length(ys)
+    @test ys == xs
 end
 
 end  # module
