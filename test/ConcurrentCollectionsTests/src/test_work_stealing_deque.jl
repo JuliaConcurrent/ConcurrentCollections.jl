@@ -22,7 +22,8 @@ function test_single_thread_push_pop()
     @test [pop!(deque) for _ in xs] == reverse(xs)
 end
 
-function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
+function random_pushpop(xs; ntasks = Threads.nthreads() - 1, sentinel = -1)
+    sentinel = convert(eltype(xs), sentinel)  # verify argument
     ntasks = max(1, ntasks)
 
     deque = WorkStealingDeque{eltype(xs)}()
@@ -39,7 +40,7 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
                         continue
                     end
                     local y = something(r)
-                    y == -1 && break
+                    y == $sentinel && break
                     push!(ys, y)
                 end
                 ys
@@ -59,7 +60,7 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
         end
     finally
         for _ in 1:ntasks
-            push!(deque, -1)
+            push!(deque, sentinel)
         end
     end
 
@@ -68,17 +69,29 @@ end
 
 function test_random_push_pop()
     @testset for trial in 1:100
-        @testset for T in [Int, Any]
+        @testset for T in [Int, Any, Pair{Any,Int}]
             test_random_push_pop(T)
         end
     end
 end
 
-function test_random_push_pop(T::Type, xs = 1:2^10)
+function test_random_push_pop(T::Type)
+    sentinel = -1
+    xs = 1:2^10
+    return test_random_push_pop(T::Type, xs, sentinel)
+end
+
+function test_random_push_pop(T::Type{Pair{Any,Int}})
+    sentinel = T(-1, -1)
+    xs = [T(x, x) for x in 1:2^10]
+    return test_random_push_pop(T::Type, xs, sentinel)
+end
+
+function test_random_push_pop(T::Type, xs, sentinel)
     if T !== eltype(xs)
         xs = collect(T, xs)
     end
-    zs, yss = random_pushpop(xs)
+    zs, yss = random_pushpop(xs; sentinel)
     @test allunique(zs)
     @test all(allunique, yss)
     @debug "random_pushpop(xs)" length(zs) length.(yss)
