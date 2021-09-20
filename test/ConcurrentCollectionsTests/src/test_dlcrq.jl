@@ -7,7 +7,7 @@ using ConcurrentCollections.Implementations:
 using ProgressLogging: @logprogress, @withprogress
 using Test
 
-function var"test_MPCRQSlot"()
+function test_MPCRQSlot()
     for index in [111, 222],
         safe in [false, true],
         polarity in [DATA, ANTIDATA],
@@ -47,7 +47,7 @@ function test_error()
     @test popfirst!(q) == 111
 end
 
-function var"test_push-pop 100"()
+function test_push_pop_100()
     n = 100
     q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 3)
     foldl(push!, 1:n; init = q)
@@ -59,7 +59,7 @@ function var"test_push-pop 100"()
     @test ys == 1:n
 end
 
-function var"test_push-pop 100 wait first"()
+function test_push_pop_100_wait_first()
     n = 100
     q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 3)
     task = Threads.@spawn begin
@@ -76,7 +76,7 @@ function var"test_push-pop 100 wait first"()
     @test ys == 1:n
 end
 
-function var"test_push-pop 100 inline"()
+function test_push_pop_100_inline()
     n = 100
     q = DualLinkedConcurrentRingQueue{Int16}(; log2ringsize = 3)
     @test q.data.data === nothing

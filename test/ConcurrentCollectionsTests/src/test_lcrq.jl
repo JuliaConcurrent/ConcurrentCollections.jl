@@ -17,7 +17,7 @@ function test_push_pop_once_any()
     @test trypopfirst!(q) == Some{Any}(111)
 end
 
-function var"test_push-pop 100"()
+function test_push_pop_100()
     n = 100
     q = LinkedConcurrentRingQueue{Int}()
     foldl(push!, 1:n; init = q)

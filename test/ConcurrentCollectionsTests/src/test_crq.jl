@@ -7,7 +7,7 @@ using ConcurrentCollections.Implementations:
 using ProgressLogging: @logprogress, @withprogress
 using Test
 
-function var"test_CRQSlot"()
+function test_CRQSlot()
     for index in [111, 222],
         safe in [false, true],
         storage in UInt32[0xaaa, 0xbbb]

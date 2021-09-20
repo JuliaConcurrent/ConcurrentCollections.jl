@@ -12,7 +12,7 @@ using ConcurrentCollections.Implementations:
 using ProgressLogging: @logprogress, @withprogress
 using Test
 
-function var"test_close"()
+function test_close()
     crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(3)
     @testset for i in 1:8
         @test denqueue!(crq, i) === MPCRQ_ENQUEUED
