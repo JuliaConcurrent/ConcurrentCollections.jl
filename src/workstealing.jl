@@ -30,6 +30,8 @@ Base.@propagate_inbounds function Base.setindex!(A::CircularVector, v, i::Int)
     A.data[indexof(A, i)] = v
 end
 
+Base.pointer(A::CircularVector, i::Integer) = pointer(A.data, indexof(A, i))
+
 function tryresize(A::CircularVector, log2inc::Integer, indices)
     log2length = A.log2length + log2inc
     n = 1 << log2length
@@ -134,11 +136,23 @@ function ConcurrentCollections.trypopfirst!(deque::WorkStealingDeque)
     if current_size <= 0
         return nothing
     end
-    r = Some(buffer[top])
-    if @atomicreplace(deque.top, top => top + 1)[2]
-        return r
+    if Base.allocatedinline(eltype(buffer))
+        r = Some(buffer[top])
+        if @atomicreplace(deque.top, top => top + 1)[2]
+            return r
+        else
+            return nothing
+        end
     else
-        return nothing
+        ptr = UnsafeAtomics.load(Ptr{Ptr{Cvoid}}(pointer(buffer, top)), monotonic)
+        if @atomicreplace(deque.top, top => top + 1)[2]
+            GC.@preserve buffer begin
+                r = Some(unsafe_pointer_to_objref(ptr))
+            end
+            return r
+        else
+            return nothing
+        end
     end
 end
 
