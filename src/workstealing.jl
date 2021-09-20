@@ -178,7 +178,7 @@ end
 # should also work. However, since dequeue can happen many times while the
 # buffer is initialized less frequently (upon construction and resizes),
 # the `isassigned`-based strategy is not used.
-# 
+#
 # The current implementation also expecting that it is "OK" to load a
 # pointerfree value non-atomically (it's a data race in C++20 memory model hence
 # an UB). A proper solution may be to store/load these values as a sequence of
