@@ -28,19 +28,19 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
     deque = WorkStealingDeque{eltype(xs)}()
 
     local tasks, zs
-    done = Threads.Atomic{Bool}(false)
     try
         tasks = map(1:ntasks) do _
             Threads.@spawn begin
                 local ys = eltype(xs)[]
                 while true
-                    r = trypopfirst!(deque)
+                    local r = trypopfirst!(deque)
                     if r === nothing
                         GC.safepoint()
-                        done[] && break
                         continue
                     end
-                    push!(ys, something(r))
+                    local y = something(r)
+                    y == -1 && break
+                    push!(ys, y)
                 end
                 ys
             end
@@ -58,7 +58,9 @@ function random_pushpop(xs, ntasks = Threads.nthreads() - 1)
             end
         end
     finally
-        done[] = true
+        for _ in 1:ntasks
+            push!(deque, -1)
+        end
     end
 
     return zs, fetch.(tasks)
