@@ -1,7 +1,7 @@
     DualLinkedConcurrentRingQueue{T}()
 
 A concurrent queue with "almost" nonblocking `push!` and `popfirst!`.  Calling
-`popfirst!` on empty queue waits for a `push!` in another task.
+`popfirst!` on an empty queue waits for a `push!` in another task.
 
 See also: [`LinkedConcurrentRingQueue`](@ref)
 
