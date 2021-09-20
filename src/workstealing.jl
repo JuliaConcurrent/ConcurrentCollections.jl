@@ -43,14 +43,22 @@ function tryresize(A::CircularVector, log2inc::Integer, indices)
     return B
 end
 
-mutable struct WorkStealingDeque{T}
-    @atomic buffer::CircularVector{T}
+mutable struct WorkStealingDeque{T,S}
+    @atomic buffer::CircularVector{S}
     @atomic top::Int
     @atomic bottom::Int
     # TODO: pad
 end
 
-WorkStealingDeque{T}() where {T} = WorkStealingDeque{T}(CircularVector{T}(4), 1, 1)
+function WorkStealingDeque{T}() where {T}
+    if isbitstype(T) || Base.isbitsunion(T)
+        # TODO: support Some{Union{Int,Nothing}} etc.
+        S = T
+    else
+        S = Any
+    end
+    return WorkStealingDeque{T,S}(CircularVector{S}(4), 1, 1)
+end
 
 Base.eltype(::Type{WorkStealingDeque{T}}) where {T} = T
 
@@ -98,6 +106,8 @@ function Base.push!(deque::WorkStealingDeque, v)
         buffer = grow!(deque, buffer, top, bottom)
         @atomic deque.buffer = buffer
     end
+    # TODO: Technically, this should use atomic store. However, there is no way
+    # to do this in a GC-compatible way at the moment.
     buffer[bottom] = v
     bottom += 1
     @atomic deque.bottom = bottom
@@ -115,6 +125,7 @@ function ConcurrentCollections.trypop!(deque::WorkStealingDeque)
         @atomic deque.bottom = top
         return nothing
     end
+    # TODO: Technically, this should also use atomic load
     r = Some(buffer[bottom])
     if next_size > 0
         tryshrink!(deque, buffer, top, bottom)
