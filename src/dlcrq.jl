@@ -19,11 +19,11 @@ mutable struct Waiter{T}
 end
 
 Waiter{T}(task::Task = current_task()) where {T} = Waiter{T}(
-    # PadAfter32(),
+    # _PadAfter32(),
     task,
     nothing,
     WAITER_INIT,
-    # PadAfter64(),
+    # _PadAfter64(),
 )
 
 function reinit!(w::Waiter)
@@ -204,15 +204,15 @@ function IndirectMultiPolarityConcurrentRingQueueNode{T}(log2len::Int) where {T}
     antidata_idx = Int32(1)
     closed_info = Int32(1)
     return IndirectMultiPolarityConcurrentRingQueueNode(
-        PadAfter32(),
+        _PadAfter32(),
         data_idx,
-        PadAfter32(),
+        _PadAfter32(),
         antidata_idx,
-        PadAfter32(),
+        _PadAfter32(),
         closed_info,
-        PadAfter32(),
+        _PadAfter32(),
         nothing,
-        PadAfter64(),
+        _PadAfter64(),
         ring,
         log2len,
         data,
@@ -507,11 +507,11 @@ DualLinkedConcurrentRingQueue(; kwargs...) = DualLinkedConcurrentRingQueue{Any}(
 function DualLinkedConcurrentRingQueue{T}(; log2ringsize = 11) where {T}
     node = IndirectMultiPolarityConcurrentRingQueueNode{T}(log2ringsize)
     return DualLinkedConcurrentRingQueue(
-        # PadAfter32(),
+        # _PadAfter32(),
         node,
-        PadAfter64(),
+        _PadAfter64(),
         node,
-        PadAfter64(),
+        _PadAfter64(),
         ThreadLocalCache{typeof(node)}(),
         ThreadLocalCache{Waiter{T}}(),
     )::DualLinkedConcurrentRingQueue{T}

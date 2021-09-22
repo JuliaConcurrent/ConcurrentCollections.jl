@@ -59,9 +59,9 @@ function IndirectConcurrentRingQueueNode{T}(len::Int) where {T}
     tail_closed = Int32(1)
     return IndirectConcurrentRingQueueNode(
         head,
-        PadAfter32(),
+        _PadAfter32(),
         tail_closed,
-        PadAfter32(),
+        _PadAfter32(),
         nothing,
         ring,
         len,

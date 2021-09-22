@@ -101,24 +101,38 @@ end
 # Read /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size?
 const CACHELINE_SIZE = 64
 
+# Workaround
+# https://github.com/tkf/ConcurrentCollections.jl/issues/35
+# https://github.com/JuliaLang/julia/issues/42326
+#=
 primitive type PadAfter64 448 end
-PadAfter64() = Ref{PadAfter64}()[]
+=#
+const PadAfter64 = NTuple{CACHELINE_SIZE - sizeof(UInt64),UInt8}
+_PadAfter64() = Ref{PadAfter64}()[]
 
 mutable struct CheckPadAfter64
     a::UInt64
     pad::PadAfter64
     b::UInt64
 end
-@assert fieldoffset(CheckPadAfter64, 3) == CACHELINE_SIZE
+if fieldoffset(CheckPadAfter64, 3) != CACHELINE_SIZE
+    @error "Unexpected padding with `PadAfter64`" fieldoffset(CheckPadAfter64, 3)
+end
 
+#=
 const PadAfter32 = PadAfter64
+=#
+const PadAfter32 = NTuple{CACHELINE_SIZE - sizeof(UInt32),UInt8}
+_PadAfter32() = Ref{PadAfter32}()[]
 
 mutable struct CheckPadAfter32
     a::UInt32
     pad::PadAfter32
     b::UInt32
 end
-@assert fieldoffset(CheckPadAfter32, 3) == CACHELINE_SIZE
+if fieldoffset(CheckPadAfter32, 3) != CACHELINE_SIZE
+    @error "Unexpected padding with `PadAfter32`" fieldoffset(CheckPadAfter32, 3)
+end
 
 function cacheline_padded_vector(::Type{T}, n::Integer) where {T}
     cacheline = cld(sizeof(T), CACHELINE_SIZE)
