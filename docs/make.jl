@@ -21,6 +21,6 @@ for (root, dirs, files) in walkdir(joinpath(@__DIR__, "build"))
 end
 
 deploydocs(
-    repo = "github.com/tkf/ConcurrentCollections.jl",
+    repo = "github.com/JuliaConcurrent/ConcurrentCollections.jl",
     push_preview = true,
 )

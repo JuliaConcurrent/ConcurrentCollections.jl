@@ -102,7 +102,7 @@ end
 const CACHELINE_SIZE = 64
 
 # Workaround
-# https://github.com/tkf/ConcurrentCollections.jl/issues/35
+# https://github.com/JuliaconCurrent/ConcurrentCollections.jl/issues/35
 # https://github.com/JuliaLang/julia/issues/42326
 #=
 primitive type PadAfter64 448 end
