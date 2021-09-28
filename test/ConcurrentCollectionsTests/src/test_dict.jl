@@ -2,6 +2,7 @@ module TestDict
 
 using ConcurrentCollections
 using ConcurrentCollections.Implementations: clusters, migrate!
+using SyncBarriers: Barrier, cycle!
 using Test
 
 function test_expand_and_shrink(n = 17)
@@ -197,6 +198,59 @@ function test_random_mutation(; kwargs...)
     desired = zeros(valtype(dict), nkeys)
     for (k, v) in dict
         actual[k] = v
+    end
+    for (; popped, added) in locals
+        actual .+= popped
+        desired .+= added
+    end
+    @test actual == desired
+end
+
+function phased_push_pop!(
+    dict;
+    nkeys = 16,
+    repeat = 2^10,
+    phases = 2^10,
+    ntasks = Threads.nthreads(),
+)
+    locals = [
+        (
+            popped = zeros(valtype(dict), nkeys * phases),  # sum of popped values
+            added = zeros(valtype(dict), nkeys * phases),   # sum of all inserted values
+        ) for _ in 1:ntasks
+    ]
+    barrier = Barrier(ntasks)
+    @sync for (itask, (; popped, added)) in enumerate(locals)
+        Threads.@spawn begin
+            for p in 1:phases
+                k0 = (p - 1) * nkeys + 1
+                ks = k0:k0+nkeys-1
+                for _ in 1:repeat
+                    k = rand(ks)
+                    added[k] += 1
+                    modify!(dict, k) do ref
+                        Base.@_inline_meta
+                        Some(ref === nothing ? 1 : ref[] + 1)
+                    end
+                end
+                spin = 10_000  # spin for a few μs
+                cycle!(barrier[itask], spin)
+                for k in ks
+                    popped[k] += something(trypop!(dict, k), 0)
+                end
+            end
+        end
+    end
+    return locals
+end
+
+function test_phased_push_pop(; nkeys = 16, phases = 2^10, kwargs...)
+    dict = ConcurrentDict{Int,Int}()
+    locals = phased_push_pop!(dict; kwargs..., nkeys, phases)
+    actual = zeros(valtype(dict), nkeys * phases)
+    desired = zeros(valtype(dict), nkeys * phases)
+    for k in eachindex(actual)
+        actual[k] = get(dict, k, 0)
     end
     for (; popped, added) in locals
         actual .+= popped
