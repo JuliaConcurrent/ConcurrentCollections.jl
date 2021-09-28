@@ -159,4 +159,50 @@ function test_shrink()
     end
 end
 
+function random_mutation!(dict; nkeys = 8, repeat = 2^20, ntasks = Threads.nthreads())
+    ks = 1:nkeys
+    locals = [
+        (
+            popped = zeros(valtype(dict), nkeys),  # sum of popped values
+            added = zeros(valtype(dict), nkeys),   # sum of all inserted values
+        ) for _ in 1:ntasks
+    ]
+    @sync for (; popped, added) in locals
+        Threads.@spawn begin
+            for _ in 1:repeat
+                k = rand(ks)
+                if rand(Bool)
+                    y = trypop!(dict, k)
+                    if y !== nothing
+                        popped[k] += something(y)
+                    end
+                else
+                    added[k] += 1
+                    modify!(dict, k) do ref
+                        Base.@_inline_meta
+                        Some(ref === nothing ? 1 : ref[] + 1)
+                    end
+                end
+            end
+        end
+    end
+    return locals
+end
+
+function test_random_mutation(; kwargs...)
+    dict = ConcurrentDict{Int,Int}()
+    nkeys = 16
+    locals = random_mutation!(dict; kwargs..., nkeys)
+    actual = zeros(valtype(dict), nkeys)
+    desired = zeros(valtype(dict), nkeys)
+    for (k, v) in dict
+        actual[k] = v
+    end
+    for (; popped, added) in locals
+        actual .+= popped
+        desired .+= added
+    end
+    @test actual == desired
+end
+
 end  # module
