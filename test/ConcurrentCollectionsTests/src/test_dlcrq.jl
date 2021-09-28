@@ -149,17 +149,16 @@ function test_concurrent_push_pop(ntrials = 100)
     @withprogress name = "concurrent push-pop" begin
         @testset for trial in 1:ntrials
             @logprogress (trial - 1) / ntrials
-            check_concurrent_push_pop()
+            q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 5)
+            # q = Channel{Int}(Inf)
+            check_concurrent_push_pop!(q)
         end
     end
 end
 
-function check_concurrent_push_pop()
+function check_concurrent_push_pop!(q; nitems = 2^20)
     nsend = cld(Threads.nthreads(), 2)
     nrecv = max(1, Threads.nthreads() - nsend)
-    q = DualLinkedConcurrentRingQueue{Int}(; log2ringsize = 5)
-    # q = Channel{Int}(Inf)
-    nitems = 2^20
     received = concurrent_push_pop!(q, nitems, nsend, nrecv)
     allreceived = reduce(vcat, received)
     sort!(allreceived)

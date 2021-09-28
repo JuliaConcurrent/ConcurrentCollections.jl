@@ -7,6 +7,7 @@ export
     ConcurrentStack,
     Delete,
     DualLinkedConcurrentRingQueue,
+    DualLinkedQueue,
     Keep,
     LinkedConcurrentRingQueue,
     WorkStealingDeque,
@@ -70,6 +71,7 @@ include("msqueue.jl")
 include("stack.jl")
 include("lcrq.jl")
 include("dlcrq.jl")
+include("ssqueue.jl")
 include("misc.jl")
 
 end  # module Implementations
@@ -78,6 +80,7 @@ using .Implementations:
     ConcurrentQueue,
     ConcurrentStack,
     DualLinkedConcurrentRingQueue,
+    DualLinkedQueue,
     LinkedConcurrentRingQueue,
     WorkStealingDeque
 

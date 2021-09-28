@@ -6,6 +6,7 @@ mutable struct MSQNode{T}
     MSQNode{T}(next::Union{MSQNode{T},Nothing}, value::T) where {T} = new{T}(next, value)
 end
 
+# TODO: rename it to ConcurrentLinkedQueue?
 mutable struct ConcurrentQueue{T}
     @atomic head::MSQNode{T}
     @atomic tail::MSQNode{T}
