@@ -63,6 +63,7 @@ using .UnsafeAtomics: acq_rel, acquire, monotonic, release, seq_cst, unordered
 include("utils.jl")
 include("cache.jl")
 include("atomicsutils.jl")
+include("promise.jl")
 include("dict.jl")
 include("workstealing.jl")
 include("msqueue.jl")

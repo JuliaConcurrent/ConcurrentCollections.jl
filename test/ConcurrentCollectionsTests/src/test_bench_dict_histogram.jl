@@ -9,15 +9,25 @@ function test()
     datasize_list = [10, 2^5, 2^10, 2^20]
     fulldata = generate(datasize = datasize_list[end])
     @testset for datasize in datasize_list
-        test(datasize, fulldata)
+        data = view(fulldata, 1:datasize)
+        test(data)
     end
 end
 
-function test(datasize, fulldata)
-    data = view(fulldata, 1:datasize)
+function test(data)
     dbase = hist_seq!(Dict{String,Int}(), data)
     @testset "seq" begin
         cdseq = hist_seq!(ConcurrentDict{String,Int}(), data)
+        @test sort(collect(setdiff(keys(dbase), keys(cdseq)))) == []
+        @test sort(collect(setdiff(keys(cdseq), keys(dbase)))) == []
+        diffvalues = []
+        for (key, expected) in dbase
+            actual = cdseq[key]
+            if actual != expected
+                push!(diffvalues, (; key, actual, expected))
+            end
+        end
+        @test diffvalues == []
         @test Dict(cdseq) == dbase
     end
     @testset for ntasks in default_ntasks_list()

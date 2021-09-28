@@ -15,6 +15,11 @@ macro static_error(msg::AbstractString)
     :(static_error(Val{$(QuoteNode(sym))}()))
 end
 
+function noinline(f)
+    @noinline g() = f()
+    return g()
+end
+
 """
     is_pointerfree_type(T::Type) :: Bool
 
@@ -181,6 +186,14 @@ function threaded_typed_mapreduce(f, ::Type{T}, op, xs; kw...) where {T}
         y[] = f(x)
     end
     return mapreduce(getindex, op, refs; kw...)
+end
+
+function zip_strict(a, args...)
+    lens = map(length, args)
+    all(==(length(a)), lens) || noinline() do
+        error("collections have non-identical length: ", length(a), ", ", join(lens, ", "))
+    end
+    return zip(a, args...)
 end
 
 function define_docstrings()
