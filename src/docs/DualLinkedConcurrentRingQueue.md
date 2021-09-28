@@ -3,7 +3,7 @@
 A concurrent queue with "almost" nonblocking `push!` and `popfirst!`.  Calling
 `popfirst!` on an empty queue waits for a `push!` in another task.
 
-See also: [`LinkedConcurrentRingQueue`](@ref)
+See also: [`LinkedConcurrentRingQueue`](@ref), [`DualLinkedQueue`](@ref)
 
 # Examples
 ```julia
