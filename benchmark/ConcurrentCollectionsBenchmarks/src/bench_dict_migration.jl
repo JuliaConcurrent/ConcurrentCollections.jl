@@ -3,7 +3,7 @@ module BenchDictMigration
 using BenchmarkTools
 using ConcurrentCollections
 using ConcurrentCollections.Implementations:
-    LINEAR_PROBING_DICT_EXPAND_BASESIZE, migrate_serial!, new_slots_and_pairnodes
+    LINEAR_PROBING_DICT_EXPAND_BASESIZE, migrate_serial!
 
 pad16(x) = string(x; pad = 16)
 
@@ -28,13 +28,11 @@ function setup(; generate_options...)
     for key in keys(CACHE[])
         CacheType = typeof(CACHE[][key])
         suite[key] = @benchmarkable(
-            migrate_serial!(newslots, newpairnodes, slots, pairnodes),
+            migrate_serial!(newslots, slots),
             setup = begin
                 dict = CACHE[][$key]::$CacheType
                 slots = copy(dict.slots)
-                pairnodes = copy(dict.pairnodes)
-                newslots, newpairnodes =
-                    new_slots_and_pairnodes(slots, pairnodes, true)
+                newslots = similar(slots, length(slots) * 2)
             end,
             evals = 1,
         )

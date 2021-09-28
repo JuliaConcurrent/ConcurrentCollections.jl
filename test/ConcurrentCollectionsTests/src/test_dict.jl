@@ -1,53 +1,8 @@
 module TestDict
 
 using ConcurrentCollections
-using ConcurrentCollections.Implementations:
-    LPDKeyState,
-    LPD_BITMASK,
-    LPD_DELETED,
-    LPD_EMPTY,
-    LPD_HASKEY,
-    LPD_MOVED,
-    LPD_MOVED_EMPTY,
-    LPD_NBITS,
-    KeyInfo,
-    clusters,
-    migrate!,
-    setdata,
-    setstate
+using ConcurrentCollections.Implementations: clusters, migrate!
 using Test
-
-function test_keyinfo()
-    @test KeyInfo(UInt64(0)).state === LPD_EMPTY
-    @testset for state in instances(LPDKeyState)
-        @test KeyInfo{UInt64}(state, 0x0123456789abcdef).state === state
-        if state !== LPD_EMPTY
-            @test KeyInfo{UInt64}(state, 0x0123456789abcdef).keydata === 0x0123456789abcdef
-        end
-        @test setstate(KeyInfo(rand(UInt64)), state).state === state
-        keydata = rand(UInt64) >> LPD_NBITS
-        @test setdata(KeyInfo(rand(UInt64)), keydata).keydata === keydata
-    end
-end
-
-function test_keyinfo_properties()
-    keyinfo = KeyInfo{UInt64}(rand(UInt64))
-    enum_to_property = Dict(
-        LPD_EMPTY => :isempty,
-        LPD_DELETED => :isdeleted,
-        LPD_MOVED_EMPTY => :ismovedempty,
-        LPD_MOVED => :ismoved,
-        LPD_HASKEY => :haskey,
-    )
-    properties = collect(values(enum_to_property))
-    @testset for state in instances(LPDKeyState), prop in properties
-        if enum_to_property[state] === prop
-            @test getproperty(setstate(keyinfo, state), prop)
-        else
-            @test !getproperty(setstate(keyinfo, state), prop)
-        end
-    end
-end
 
 function test_expand_and_shrink(n = 17)
     d = ConcurrentDict{Int,Int}()
