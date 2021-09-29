@@ -172,10 +172,23 @@ end
 
 function test_print()
     q = DualLinkedConcurrentRingQueue{Int}()
+    str = sprint(show, "text/plain", q)
+    @test "Dual LCRQ: " ⊏ str
+    @test "0 data item" ⊏ str
+
     push!(q, 333)
     str = sprint(show, "text/plain", q)
     @test "Dual LCRQ: " ⊏ str
     @test "1 data item" ⊏ str
+
+    popfirst!(q)
+    t = @task popfirst!(q)
+    yield(t)
+    str = sprint(show, "text/plain", q)
+    push!(q, 444)
+    wait(t)
+    @test "Dual LCRQ: " ⊏ str
+    @test "1 waiter" ⊏ str
 end
 
 end  # module
