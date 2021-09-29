@@ -7,6 +7,7 @@
 
 ```@docs
 DualLinkedConcurrentRingQueue
+DualLinkedQueue
 LinkedConcurrentRingQueue
 ConcurrentQueue
 ConcurrentStack
