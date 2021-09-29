@@ -4,6 +4,7 @@ using ConcurrentCollections
 using ConcurrentCollections.Implementations: clusters, migrate!
 using SyncBarriers: Barrier, cycle!
 using Test
+using ..Utils: ⊏
 
 function test_expand_and_shrink(n = 17)
     d = ConcurrentDict{Int,Int}()
@@ -257,6 +258,14 @@ function test_phased_push_pop(; nkeys = 16, phases = 2^10, kwargs...)
         desired .+= added
     end
     @test actual == desired
+end
+
+function test_print()
+    d = ConcurrentDict(111 => 222, 333 => 444)
+    str = sprint(show, "text/plain", d)
+    @test "ConcurrentDict" ⊏ str
+    @test "111 => 222" ⊏ str
+    @test "333 => 444" ⊏ str
 end
 
 end  # module

@@ -6,6 +6,7 @@ using ConcurrentCollections.Implementations:
     CRQSlot, IndirectConcurrentRingQueueNode, trypush!, isclosed
 using ProgressLogging: @logprogress, @withprogress
 using Test
+using ..Utils: ⊏
 
 function test_CRQSlot()
     for index in [111, 222],
@@ -14,6 +15,15 @@ function test_CRQSlot()
 
         @test NamedTuple(CRQSlot(; index, safe, storage)) == (; index, safe, storage)
     end
+end
+
+function test_print_crqslot()
+    slot = CRQSlot(; index = 111, safe = false, storage = UInt32(0xaaa))
+    str = sprint(show, "text/plain", slot)
+    @test "CRQSlot" ⊏ str
+    @test r"index *= *111" ⊏ str
+    @test r"safe *= *false" ⊏ str
+    @test r"storage *= *0x0+aaa" ⊏ str
 end
 
 function unfair_sleep(seconds::Real)
@@ -161,6 +171,12 @@ function check_concurrent_push_pop()
     @test notfound == []
     @test dups == []
     @test allreceived == 1:nitems
+end
+
+function test_print()
+    crq = IndirectConcurrentRingQueueNode{Int16}(32)
+    str = sprint(show, "text/plain", crq)
+    @test "CRQ: " ⊏ str
 end
 
 end  # module
