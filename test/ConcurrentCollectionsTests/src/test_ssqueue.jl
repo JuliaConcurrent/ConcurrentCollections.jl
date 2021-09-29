@@ -1,10 +1,11 @@
 module TestSSQueue
 
 using ConcurrentCollections
-using ConcurrentCollections.Implementations: NodeIterator, SSQNode, check_invariance
+using ConcurrentCollections.Implementations: NodeIterator, SSQNode, check_invariance, ==′
 using ProgressLogging: @logprogress, @withprogress
 using Test
 using ..TestDLCRQ: check_concurrent_push_pop!
+using ..Utils: ⊏
 
 function test_push_pop_once_int()
     q = DualLinkedQueue{Int}()
@@ -45,6 +46,14 @@ function test_concurrent_push_pop(ntrials = 100)
     end
 end
 
+function test_iter()
+    q = DualLinkedQueue{Int}()
+    @test eltype(q) === Int
+    push!(q, 111)
+    push!(q, 222)
+    @test collect(q) ==′ [111, 222]
+end
+
 function test_nodeiterator()
     q = DualLinkedQueue{Int}()
     push!(q, 111)
@@ -55,6 +64,14 @@ function test_nodeiterator()
     @test nodes[1].value == 111
     @test nodes[2].value == 222
     @test check_invariance(q)
+end
+
+function test_print()
+    q = DualLinkedQueue{Int}()
+    push!(q, 111)
+    push!(q, 222)
+    str = sprint(show, "text/plain", q)
+    @test "DualLinkedQueue" ⊏ str
 end
 
 end  # module
