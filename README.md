@@ -18,7 +18,8 @@ the *throughput*) of your program, it is highly recommended to look for ways to
 **avoid** using concurrent collections first.  In particular, consider applying
 the [data-parallel](https://juliafolds.github.io/data-parallelism/) pattern to
 dodge the difficulties in concurrent programming.  For example, it is often a
-better idea to use task-local copies of **non**-thread-safe `Dict` instead of
-`ConcurrentDict` shared across tasks. For more information, see: [Efficient and
-safe approaches to mutation in data
+better idea to use task-local **non**-thread-safe `Dict`s instead of a
+`ConcurrentDict` shared across tasks.  One of the most important techniques in
+data-parallel programming is how to merge such task-local states.  For more
+information, see, e.g., [Efficient and safe approaches to mutation in data
 parallelism](https://juliafolds.github.io/data-parallelism/tutorials/mutations/).
