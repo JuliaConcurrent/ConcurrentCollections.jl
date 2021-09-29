@@ -191,7 +191,7 @@ end
 
 Base.IteratorSize(::Type{<:NodeIterator}) = Base.SizeUnknown()
 
-Base.eltype(::Type{NodeIterator{<:DualLinkedQueue{T}}}) where {T} = SSQNode{T}
+Base.eltype(::Type{NodeIterator{DualLinkedQueue{T}}}) where {T} = SSQNode{T}
 
 function Base.iterate(
     iter::NodeIterator{DualLinkedQueue{T}},
