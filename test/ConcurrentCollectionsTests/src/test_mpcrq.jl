@@ -3,7 +3,9 @@ module TestMPCRQ
 using Base.Experimental: @sync
 using ConcurrentCollections
 using ConcurrentCollections.Implementations:
+    DATA,
     IndirectMultiPolarityConcurrentRingQueueNode,
+    MPCRQSlot,
     MPCRQ_CLOSED,
     MPCRQ_ENQUEUED,
     Waiter,
@@ -12,6 +14,16 @@ using ConcurrentCollections.Implementations:
 using ProgressLogging: @logprogress, @withprogress
 using Test
 using ..Utils: ⊏
+
+function test_print_mpcrqslot()
+    slot = MPCRQSlot(; index = 111, safe = false, polarity = DATA, storage = UInt32(0xaaa))
+    str = sprint(show, "text/plain", slot)
+    @test "MPCRQSlot" ⊏ str
+    @test r"index *= *111" ⊏ str
+    @test r"safe *= *false" ⊏ str
+    @test r"polarity *=.*DATA" ⊏ str
+    @test r"storage *= *0x0+aaa" ⊏ str
+end
 
 function test_close()
     crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(3)
@@ -173,6 +185,17 @@ function test_print()
     crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(3)
     str = sprint(show, "text/plain", crq)
     @test "MP-CRQ: " ⊏ str
+    @test "empty" ⊏ str
+
+    denqueue!(crq, 333)
+    str = sprint(show, "text/plain", crq)
+    @test "1 data item" ⊏ str
+
+    denqueue!(crq, Waiter{Int}())  # pop
+    w = Waiter{Int}()
+    denqueue!(crq, w)
+    str = sprint(show, "text/plain", crq)
+    @test "1 waiter" ⊏ str
 end
 
 end  # module
