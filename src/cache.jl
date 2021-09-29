@@ -8,7 +8,7 @@ function ThreadLocalCache{T}(; size::Integer = 4) where {T}
     return ThreadLocalCache(cache, size)
 end
 
-function maybepop!(cache::ThreadLocalCache)
+function _maybepop!(cache::ThreadLocalCache)
     buffer = cache.cache[Threads.threadid()]
     if isempty(buffer)
         return nothing
