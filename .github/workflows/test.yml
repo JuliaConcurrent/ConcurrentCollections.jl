@@ -14,8 +14,13 @@ jobs:
       matrix:
         julia-version: ['~1.7.0-beta4', 'nightly']
         nthreads: ['1', '2']
+        assertion: ['false']
+        include:
+          - julia-version: '~1.7.0-beta4'
+            nthreads: '2'
+            assertion: 'true'
       fail-fast: false
-    name: Test Julia ${{ matrix.julia-version }} nthreads=${{ matrix.nthreads }}
+    name: Test Julia ${{ matrix.julia-version }} nthreads=${{ matrix.nthreads }} assertion=${{ matrix.assertion }}
     steps:
       - uses: actions/checkout@v2
       - name: Setup julia
@@ -27,6 +32,7 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
         env:
           JULIA_NUM_THREADS: ${{ matrix.nthreads }}
+          CONCURRENTCOLLECTIONS_JL_ASSERTION: ${{ matrix.assertion }}
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v1
         with:
