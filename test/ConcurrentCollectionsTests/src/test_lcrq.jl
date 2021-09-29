@@ -4,6 +4,7 @@ using Base.Experimental: @sync
 using ConcurrentCollections
 using ProgressLogging: @logprogress, @withprogress
 using Test
+using ..Utils: ⊏
 
 function test_push_pop_once_int()
     q = LinkedConcurrentRingQueue{Int}()
@@ -102,6 +103,14 @@ function check_concurrent_push_pop()
     @test notfound == []
     @test dups == []
     @test allreceived == 1:nitems
+end
+
+function test_print()
+    q = LinkedConcurrentRingQueue{Int}()
+    push!(q, 111)
+    str = sprint(show, "text/plain", q)
+    @test "LCRQ: " ⊏ str
+    @test "111" ⊏ str
 end
 
 end  # module
