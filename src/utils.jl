@@ -4,6 +4,12 @@
 assertion_enabled() = false
 # assertion_enabled() = true
 
+function enable_assertion()
+    prev = assertion_enabled()
+    @eval assertion_enabled() = true
+    return prev
+end
+
 @noinline unreachable() = error("unreachable reached")
 
 @noinline unexpected(x) = error("unexpected value: $x")
