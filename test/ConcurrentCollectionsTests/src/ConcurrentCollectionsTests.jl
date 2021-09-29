@@ -9,6 +9,7 @@ include("test_doctest.jl")
 include("test_lcrq.jl")
 include("test_mpcrq.jl")
 include("test_msqueue.jl")
+include("test_ssqueue.jl")
 include("test_tsstack.jl")
 include("test_work_stealing_deque.jl")
 

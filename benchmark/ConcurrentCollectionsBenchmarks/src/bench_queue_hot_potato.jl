@@ -133,6 +133,7 @@ function setup(; kwargs...)
     suite["channel"] = @benchmarkable hotpotato!(Channel{Bool}(Inf); $kwargs...)
     suite["dlcrq"] =
         @benchmarkable hotpotato!(DualLinkedConcurrentRingQueue{Bool}(); $kwargs...)
+    suite["dlq"] = @benchmarkable hotpotato!(DualLinkedQueue{Bool}(); $kwargs...)
     return suite
 end
 
