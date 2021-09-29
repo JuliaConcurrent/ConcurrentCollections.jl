@@ -12,6 +12,7 @@ include("test_msqueue.jl")
 include("test_ssqueue.jl")
 include("test_tsstack.jl")
 include("test_work_stealing_deque.jl")
+include("test_aqua.jl")
 
 function __init__()
     @info "Starting test" Threads.nthreads()

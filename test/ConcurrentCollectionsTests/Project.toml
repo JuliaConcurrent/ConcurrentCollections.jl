@@ -4,6 +4,7 @@ authors = ["Takafumi Arakaki <aka.tkf@gmail.com> and contributors"]
 version = "0.1.0-DEV"
 
 [deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
 ConcurrentCollectionsBenchmarks = "172d371b-ba13-4e7e-a6ad-f169f5735fdf"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
