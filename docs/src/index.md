@@ -12,8 +12,8 @@ LinkedConcurrentRingQueue
 ConcurrentQueue
 ConcurrentStack
 WorkStealingDeque
-trypop!
-trypopfirst!
+maybepop!
+maybepopfirst!
 ```
 
 ## Hash table
@@ -21,7 +21,7 @@ trypopfirst!
 ```@docs
 ConcurrentDict
 modify!
-tryget
+maybeget
 Keep
 Delete
 ```

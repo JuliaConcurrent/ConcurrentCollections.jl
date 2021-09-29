@@ -8,12 +8,12 @@ function test_single_thread_push_pop()
     xs = 1:50
     foldl(push!, xs; init = deque)
     @test [pop!(deque) for _ in xs] == reverse(xs)
-    @test trypop!(deque) === nothing
-    @test trypopfirst!(deque) === nothing
+    @test maybepop!(deque) === nothing
+    @test maybepopfirst!(deque) === nothing
     push!(deque, 1)
-    @test trypopfirst!(deque) === Some(1)
-    @test trypopfirst!(deque) === nothing
-    @test trypop!(deque) === nothing
+    @test maybepopfirst!(deque) === Some(1)
+    @test maybepopfirst!(deque) === nothing
+    @test maybepop!(deque) === nothing
 
     foldl(push!, xs; init = deque)
     n = length(deque.buffer)
@@ -34,7 +34,7 @@ function random_pushpop(xs; ntasks = Threads.nthreads() - 1, sentinel = -1)
             Threads.@spawn begin
                 local ys = eltype(xs)[]
                 while true
-                    local r = trypopfirst!(deque)
+                    local r = maybepopfirst!(deque)
                     if r === nothing
                         GC.safepoint()
                         continue
@@ -52,7 +52,7 @@ function random_pushpop(xs; ntasks = Threads.nthreads() - 1, sentinel = -1)
             push!(deque, x)
             # continue
             if mod(i, 8) == 0
-                r = trypop!(deque)
+                r = maybepop!(deque)
                 GC.safepoint()
                 r === nothing && continue
                 push!(zs, something(r))

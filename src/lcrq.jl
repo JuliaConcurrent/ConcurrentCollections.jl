@@ -144,7 +144,7 @@ function trypush!(crq::IndirectConcurrentRingQueueNode, x)
     end
 end
 
-function ConcurrentCollections.trypopfirst!(crq::IndirectConcurrentRingQueueNode)
+function ConcurrentCollections.maybepopfirst!(crq::IndirectConcurrentRingQueueNode)
     while true
         h = (@atomic crq.head += true) - true
         itemindex = mod1(h, crq.length)  # TODO: shift
@@ -261,15 +261,15 @@ function Base.push!(lcrq::LinkedConcurrentRingQueue{T}, x) where {T}
     end
 end
 
-function ConcurrentCollections.trypopfirst!(lcrq::LinkedConcurrentRingQueue)
+function ConcurrentCollections.maybepopfirst!(lcrq::LinkedConcurrentRingQueue)
     while true
         crq = @atomic lcrq.head
-        x = trypopfirst!(crq)
+        x = maybepopfirst!(crq)
         x === nothing || return x
         next = @atomic crq.next
         next === nothing && return nothing
 
-        x = trypopfirst!(crq)
+        x = maybepopfirst!(crq)
         x === nothing || return x
         @atomicreplace lcrq.head crq => next
     end

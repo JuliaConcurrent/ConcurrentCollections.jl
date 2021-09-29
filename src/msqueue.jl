@@ -43,7 +43,7 @@ function Base.push!(queue::ConcurrentQueue{T}, v) where {T}
     end
 end
 
-function ConcurrentCollections.trypopfirst!(queue::ConcurrentQueue)
+function ConcurrentCollections.maybepopfirst!(queue::ConcurrentQueue)
     head = @atomic queue.head
     tail = @atomic queue.tail
     while true
@@ -71,7 +71,7 @@ function ConcurrentCollections.trypopfirst!(queue::ConcurrentQueue)
 end
 
 function Base.popfirst!(queue::ConcurrentQueue)
-    r = trypopfirst!(queue)
+    r = maybepopfirst!(queue)
     if r === nothing
         error("queue is empty")
     else

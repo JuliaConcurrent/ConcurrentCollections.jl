@@ -70,11 +70,11 @@ function test_dict(npairs)
                 @test vs == reverse((1:npairs) .* -1)
             end
         end
-        @testset "trypop!" begin
-            @test tryget(d, 1) === Some(-1)
-            @test trypop!(d, 1) === Some(-1)
-            @test tryget(d, 1) === nothing
-            @test trypop!(d, 1) === nothing
+        @testset "maybepop!" begin
+            @test maybeget(d, 1) === Some(-1)
+            @test maybepop!(d, 1) === Some(-1)
+            @test maybeget(d, 1) === nothing
+            @test maybepop!(d, 1) === nothing
             @test 1 ∉ sort!(collect(keys(d)))
         end
         @testset "length_upper_bound" begin
@@ -116,11 +116,11 @@ function test_dict(npairs)
                 @test kvs == [str(i) => -i for i in 1:npairs]
             end
         end
-        @testset "trypop!" begin
-            @test tryget(d, "001") === Some(-1)
-            @test trypop!(d, "001") === Some(-1)
-            @test tryget(d, "001") === nothing
-            @test trypop!(d, "001") === nothing
+        @testset "maybepop!" begin
+            @test maybeget(d, "001") === Some(-1)
+            @test maybepop!(d, "001") === Some(-1)
+            @test maybeget(d, "001") === nothing
+            @test maybepop!(d, "001") === nothing
             @test "001" ∉ sort!(collect(keys(d)))
         end
         @testset "clusters" begin
@@ -173,7 +173,7 @@ function random_mutation!(dict; nkeys = 8, repeat = 2^20, ntasks = Threads.nthre
             for _ in 1:repeat
                 k = rand(ks)
                 if rand(Bool)
-                    y = trypop!(dict, k)
+                    y = maybepop!(dict, k)
                     if y !== nothing
                         popped[k] += something(y)
                     end
@@ -236,7 +236,7 @@ function phased_push_pop!(
                 spin = 10_000  # spin for a few μs
                 cycle!(barrier[itask], spin)
                 for k in ks
-                    popped[k] += something(trypop!(dict, k), 0)
+                    popped[k] += something(maybepop!(dict, k), 0)
                 end
             end
         end

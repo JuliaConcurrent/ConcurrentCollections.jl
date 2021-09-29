@@ -8,13 +8,13 @@ using Test
 function test_push_pop_once_int()
     q = LinkedConcurrentRingQueue{Int}()
     push!(q, 111)
-    @test trypopfirst!(q) == Some(111)
+    @test maybepopfirst!(q) == Some(111)
 end
 
 function test_push_pop_once_any()
     q = LinkedConcurrentRingQueue()
     push!(q, 111)
-    @test trypopfirst!(q) == Some{Any}(111)
+    @test maybepopfirst!(q) == Some{Any}(111)
 end
 
 function test_push_pop_100()
@@ -22,7 +22,7 @@ function test_push_pop_100()
     q = LinkedConcurrentRingQueue{Int}()
     foldl(push!, 1:n; init = q)
     ys = Int[]
-    while (y = trypopfirst!(q)) !== nothing
+    while (y = maybepopfirst!(q)) !== nothing
         push!(ys, something(y))
     end
     @test ys == 1:n
@@ -49,7 +49,7 @@ function concurrent_push_pop!(q, nitems::Integer, nsend::Integer, nrecv::Integer
             push!(received, ys)
             Threads.@spawn begin
                 while true
-                    y = trypopfirst!(q)
+                    y = maybepopfirst!(q)
                     if y === nothing
                         yield()
                     else
