@@ -2,7 +2,7 @@
 
 Concurrent queue of objects of type `T`.
 
-Use `push!` to insert an element at the tail and [`trypopfirst!`](@ref) to
+Use `push!` to insert an element at the tail and [`maybepopfirst!`](@ref) to
 retrieve and remove an element at the head.
 
 Implementation detail: It implements the Michael and Scott queue.
@@ -21,8 +21,8 @@ julia> push!(queue, 2);
 julia> popfirst!(queue)
 1
 
-julia> trypopfirst!(queue)
+julia> maybepopfirst!(queue)
 Some(2)
 
-julia> trypopfirst!(queue)  # returns nothing
+julia> maybepopfirst!(queue)  # returns nothing
 ``` 

@@ -8,7 +8,7 @@ function test_simple()
     xs = 1:10
     foldl(push!, xs; init = q)
     @test [popfirst!(q) for _ in xs] == xs
-    @test trypopfirst!(q) === nothing
+    @test maybepopfirst!(q) === nothing
 end
 
 function pushpop(xs, ntasks = Threads.nthreads())
@@ -21,7 +21,7 @@ function pushpop(xs, ntasks = Threads.nthreads())
             Threads.@spawn begin
                 local ys = eltype(xs)[]
                 while true
-                    r = trypopfirst!(queue)
+                    r = maybepopfirst!(queue)
                     if r === nothing
                         done[] && break
                         continue

@@ -1,6 +1,6 @@
     LinkedConcurrentRingQueue{T}()
 
-A concurrent queue with nonblocking `push!` and [`trypopfirst!`](@ref).
+A concurrent queue with nonblocking `push!` and [`maybepopfirst!`](@ref).
 
 See also: [`DualLinkedConcurrentRingQueue`](@ref)
 
@@ -14,13 +14,13 @@ julia> push!(q, 111);
 
 julia> push!(q, 222);
 
-julia> trypopfirst!(q)  # first-in first-out
+julia> maybepopfirst!(q)  # first-in first-out
 Some(111)
 
-julia> trypopfirst!(q)
+julia> maybepopfirst!(q)
 Some(222)
 
-julia> trypopfirst!(q) === nothing  # queue is empty
+julia> maybepopfirst!(q) === nothing  # queue is empty
 true
 ```
 

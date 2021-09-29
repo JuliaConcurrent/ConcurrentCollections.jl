@@ -83,15 +83,15 @@ function concurrent_denqueue!(
                 local ys_nb = Int[]
                 local ys_b = Int[]
                 while true
-                    local y = trypopfirst!(crq)
+                    local y = maybepopfirst!(crq)
                     if y === nothing
                         if activesenders[] == 0
-                            y = trypopfirst!(crq)
+                            y = maybepopfirst!(crq)
                             if y === nothing  # Confirm that CRQ is empty
                                 return y
                             end
                             # Reaching here means that there were some enqueues
-                            # between our `trypopfirst!(crq) === nothing` and
+                            # between our `maybepopfirst!(crq) === nothing` and
                             # `activesenders[] == 0`.
                         else
                             poll()

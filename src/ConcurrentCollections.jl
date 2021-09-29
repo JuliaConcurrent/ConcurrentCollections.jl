@@ -14,9 +14,9 @@ export
     length_upper_bound,
     length_upper_bound,
     modify!,
-    tryget,
-    trypop!,
-    trypopfirst!
+    maybeget,
+    maybepop!,
+    maybepopfirst!
 
 import Base
 
@@ -31,9 +31,9 @@ end
 abstract type ConcurrentDict{Key,Value} <: Base.AbstractDict{Key,Value} end
 
 function modify! end
-function trypop! end
-function trypopfirst! end
-function tryget end
+function maybepop! end
+function maybepopfirst! end
+function maybeget end
 function length_lower_bound end
 function length_upper_bound end
 
@@ -54,9 +54,9 @@ using ..ConcurrentCollections:
     length_lower_bound,
     length_upper_bound,
     modify!,
-    tryget,
-    trypop!,
-    trypopfirst!
+    maybeget,
+    maybepop!,
+    maybepopfirst!
 
 include("UnsafeAtomics.jl")
 using .UnsafeAtomics: acq_rel, acquire, monotonic, release, seq_cst, unordered

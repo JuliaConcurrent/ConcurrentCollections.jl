@@ -117,7 +117,7 @@ function Base.push!(deque::WorkStealingDeque, v)
     return deque
 end
 
-function ConcurrentCollections.trypop!(deque::WorkStealingDeque)
+function ConcurrentCollections.maybepop!(deque::WorkStealingDeque)
     bottom = @atomic deque.bottom
     buffer = @atomic deque.buffer
     bottom -= 1
@@ -142,7 +142,7 @@ function ConcurrentCollections.trypop!(deque::WorkStealingDeque)
     return r
 end
 
-function ConcurrentCollections.trypopfirst!(deque::WorkStealingDeque{T}) where {T}
+function ConcurrentCollections.maybepopfirst!(deque::WorkStealingDeque{T}) where {T}
     top = @atomic deque.top
     bottom = @atomic deque.bottom
     buffer = @atomic deque.buffer
@@ -187,7 +187,7 @@ end
 # Atomics](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0690r1.html)
 
 function Base.pop!(deque::WorkStealingDeque)
-    r = trypop!(deque)
+    r = maybepop!(deque)
     if r === nothing
         error("deque is empty")
     else
@@ -196,7 +196,7 @@ function Base.pop!(deque::WorkStealingDeque)
 end
 
 function Base.popfirst!(deque::WorkStealingDeque)
-    r = trypopfirst!(deque)
+    r = maybepopfirst!(deque)
     if r === nothing
         error("deque is empty")
     else

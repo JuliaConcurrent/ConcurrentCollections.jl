@@ -24,7 +24,7 @@ function pushpop!(
                         while true
                             y = nothing
                             for _ in 1:nspins
-                                y = trypopfirst!(q)
+                                y = maybepopfirst!(q)
                                 y === nothing || break
                             end
                             y === nothing || break

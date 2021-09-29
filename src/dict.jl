@@ -113,7 +113,7 @@ end
 @inline Base.getindex(ref::ValueRef) = ref.value
 
 function Base.getindex(d::LinearProbingDict{Key}, key) where {Key}
-    y = tryget(d, key)
+    y = maybeget(d, key)
     if y === nothing
         throw(KeyError(key))
     else
@@ -129,9 +129,9 @@ function Base.haskey(d::LinearProbingDict, key)
 end
 
 Base.get(d::LinearProbingDict, key, default) =
-    something(ConcurrentCollections.tryget(d, key), default)
+    something(ConcurrentCollections.maybeget(d, key), default)
 
-function ConcurrentCollections.tryget(d::LinearProbingDict{<:Any,V}, key) where {V}
+function ConcurrentCollections.maybeget(d::LinearProbingDict{<:Any,V}, key) where {V}
     @inline f(::Nothing) = nothing
     @inline f(x) = Keep(x[])
     y = modify!(f, d, key)
@@ -149,14 +149,14 @@ function Base.setindex!(d::LinearProbingDict{Key,Value}, v, k) where {Key,Value}
     return d
 end
 
-Base.pop!(d::LinearProbingDict, key, default) = something(trypop!(d, key), default)
+Base.pop!(d::LinearProbingDict, key, default) = something(maybepop!(d, key), default)
 function Base.pop!(d::LinearProbingDict, key)
-    value = trypop!(d, key)
+    value = maybepop!(d, key)
     value === nothing && throw(KeyError(key))
     return something(value)
 end
 
-function ConcurrentCollections.trypop!(d::LinearProbingDict, key)
+function ConcurrentCollections.maybepop!(d::LinearProbingDict, key)
     @inline f(::Nothing) = nothing
     @inline f(ref) = Delete(ref[])
     y = modify!(f, d, key)

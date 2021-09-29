@@ -25,7 +25,7 @@ function Base.push!(stack::ConcurrentStack{T}, v) where {T}
     return stack
 end
 
-function ConcurrentCollections.trypop!(stack::ConcurrentStack)
+function ConcurrentCollections.maybepop!(stack::ConcurrentStack)
     while true
         node = @atomic stack.next
         node === nothing && return nothing
@@ -39,7 +39,7 @@ function ConcurrentCollections.trypop!(stack::ConcurrentStack)
 end
 
 function Base.pop!(stack::ConcurrentStack)
-    r = trypop!(stack)
+    r = maybepop!(stack)
     if r === nothing
         error("stack is empty")
     else

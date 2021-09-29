@@ -533,7 +533,7 @@ function Base.push!(lcrq::DualLinkedConcurrentRingQueue{T}, x) where {T}
 end
 
 function Base.popfirst!(lcrq::DualLinkedConcurrentRingQueue{T}) where {T}
-    w = let cached = maybepop!(lcrq.waitercache)
+    w = let cached = _maybepop!(lcrq.waitercache)
         if cached === nothing
             Waiter{eltype(lcrq)}()
         else
@@ -600,7 +600,7 @@ function denqueue!(lcrq::DualLinkedConcurrentRingQueue{T}, x::Union{T,Waiter{T}}
 end
 
 function make_newcrq!(lcrq::DualLinkedConcurrentRingQueue, crq)
-    oldcrq = maybepop!(lcrq.crqcache)
+    oldcrq = _maybepop!(lcrq.crqcache)
     if oldcrq === nothing
         return similar(crq)
     else

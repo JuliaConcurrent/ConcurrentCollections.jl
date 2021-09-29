@@ -1,4 +1,4 @@
-    trypopfirst!(collection) -> Some(value::T) or nothing
+    maybepopfirst!(collection) -> Some(value::T) or nothing
 
 
 Try to pop a `value` from the head of `collection`. Return `Some(value)` if it
@@ -13,8 +13,8 @@ julia> queue = ConcurrentQueue{Int}();
 
 julia> push!(queue, 1);
 
-julia> trypopfirst!(queue)
+julia> maybepopfirst!(queue)
 Some(1)
 
-julia> trypopfirst!(queue)  # returns nothing
+julia> maybepopfirst!(queue)  # returns nothing
 ``` 
