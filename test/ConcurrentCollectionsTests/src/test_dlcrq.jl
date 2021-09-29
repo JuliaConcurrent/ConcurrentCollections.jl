@@ -6,6 +6,7 @@ using ConcurrentCollections.Implementations:
     MPCRQSlot, DATA, ANTIDATA, denqueue!, MPCRQ_ENQUEUED
 using ProgressLogging: @logprogress, @withprogress
 using Test
+using ..Utils: ⊏
 
 function test_MPCRQSlot()
     for index in [111, 222],
@@ -167,6 +168,14 @@ function check_concurrent_push_pop!(q; nitems = 2^20)
     @test notfound == []
     @test dups == []
     @test allreceived == 1:nitems
+end
+
+function test_print()
+    q = DualLinkedConcurrentRingQueue{Int}()
+    push!(q, 333)
+    str = sprint(show, "text/plain", q)
+    @test "Dual LCRQ: " ⊏ str
+    @test "1 data item" ⊏ str
 end
 
 end  # module

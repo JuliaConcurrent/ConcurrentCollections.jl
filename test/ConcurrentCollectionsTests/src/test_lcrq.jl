@@ -107,10 +107,10 @@ end
 
 function test_print()
     q = LinkedConcurrentRingQueue{Int}()
-    push!(q, 111)
+    push!(q, 333)
     str = sprint(show, "text/plain", q)
     @test "LCRQ: " ⊏ str
-    @test "111" ⊏ str
+    @test "1 item" ⊏ str
 end
 
 end  # module

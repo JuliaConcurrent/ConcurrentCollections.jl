@@ -11,6 +11,7 @@ using ConcurrentCollections.Implementations:
     tryput!
 using ProgressLogging: @logprogress, @withprogress
 using Test
+using ..Utils: ⊏
 
 function test_close()
     crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(3)
@@ -166,6 +167,12 @@ function check_concurrent_push_pop()
     @test notfound == []
     @test dups == []
     @test allreceived == 1:nitems
+end
+
+function test_print()
+    crq = IndirectMultiPolarityConcurrentRingQueueNode{Int}(3)
+    str = sprint(show, "text/plain", crq)
+    @test "MP-CRQ: " ⊏ str
 end
 
 end  # module
