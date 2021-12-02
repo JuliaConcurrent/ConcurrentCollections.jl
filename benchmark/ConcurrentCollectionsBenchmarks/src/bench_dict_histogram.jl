@@ -46,6 +46,30 @@ function hist_parallel!(dict::ConcurrentDict, data; ntasks = Threads.nthreads())
     return dict
 end
 
+function hist_dac_impl(data, chunk_starts, basesize)
+    if length(chunk_starts) == 0
+        return Dict{String,Int}()
+    elseif length(chunk_starts) == 1
+        i = @inbounds chunk_starts[begin]
+        chunk = @inbounds data[i:min(i + basesize - 1, end)]
+        return hist_seq!(Dict{String,Int}(), chunk)
+    else
+        h = length(chunk_starts) ÷ 2
+        left_chunk = @view chunk_starts[begin:begin+h-1]
+        right_chunk = @view chunk_starts[begin+h:end]
+        task = Threads.@spawn hist_dac_impl(data, right_chunk, basesize)
+        left = hist_dac_impl(data, left_chunk, basesize)
+        right = fetch(task)::typeof(left)
+        return mergewith!(+, left, right)
+    end
+end
+
+function hist_parallel_dac(data; ntasks = Threads.nthreads())
+    basesize = cld(length(data), ntasks)
+    chunk_starts = firstindex(data):basesize:lastindex(data)
+    return hist_dac_impl(data, chunk_starts, basesize)
+end
+
 function default_ntasks_list()
     ntasks_list = [Threads.nthreads()]
     if Threads.nthreads() > 2
@@ -56,8 +80,8 @@ end
 
 const CACHE = Ref{Any}()
 
-function setup(; ntasks_list = default_ntasks_list())
-    CACHE[] = data = generate()
+function setup(; ntasks_list = default_ntasks_list(), generate_options...)
+    CACHE[] = data = generate(; generate_options...)
     T = typeof(data)
 
     suite = BenchmarkGroup()
@@ -74,6 +98,11 @@ function setup(; ntasks_list = default_ntasks_list())
         evals = 1,
     )
     for ntasks in ntasks_list
+        suite["dict-ntasks=$ntasks"] = @benchmarkable(
+            # Base.Dict, parallel
+            hist_parallel_dac(CACHE[]::$T; ntasks = $ntasks),
+            evals = 1,
+        )
         suite["cdict-ntasks=$ntasks"] = @benchmarkable(
             # ConcurrentDict, parallel
             hist_parallel!(dict, CACHE[]::$T; ntasks = $ntasks),
