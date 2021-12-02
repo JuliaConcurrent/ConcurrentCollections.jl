@@ -85,25 +85,29 @@ function setup(; ntasks_list = default_ntasks_list(), generate_options...)
     T = typeof(data)
 
     suite = BenchmarkGroup()
-    suite["base-seq"] = @benchmarkable(
+    sbs = suite["alg=:base_seq"] = BenchmarkGroup()
+    sbs["ntasks=1"] = @benchmarkable(
         # Base.Dict, sequential
         hist_seq!(dict, CACHE[]::$T),
         setup = (dict = Dict{String,Int}()),
         evals = 1,
     )
-    suite["cdict-seq"] = @benchmarkable(
+    scs = suite["alg=:cdict_seq"] = BenchmarkGroup()
+    scs["ntasks=1"] = @benchmarkable(
         # ConcurrentDict, sequential
         hist_seq!(dict, CACHE[]::$T),
         setup = (dict = ConcurrentDict{String,Int}()),
         evals = 1,
     )
+    sbp = suite["alg=:base_par"] = BenchmarkGroup()
+    scp = suite["alg=:cdict_par"] = BenchmarkGroup()
     for ntasks in ntasks_list
-        suite["dict-ntasks=$ntasks"] = @benchmarkable(
+        sbp["ntasks=$ntasks"] = @benchmarkable(
             # Base.Dict, parallel
             hist_parallel_dac(CACHE[]::$T; ntasks = $ntasks),
             evals = 1,
         )
-        suite["cdict-ntasks=$ntasks"] = @benchmarkable(
+        scp["ntasks=$ntasks"] = @benchmarkable(
             # ConcurrentDict, parallel
             hist_parallel!(dict, CACHE[]::$T; ntasks = $ntasks),
             setup = (dict = ConcurrentDict{String,Int}()),
