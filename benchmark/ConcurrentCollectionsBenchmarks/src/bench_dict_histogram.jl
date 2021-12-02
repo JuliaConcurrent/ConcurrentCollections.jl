@@ -5,12 +5,12 @@ using BenchmarkTools
 using ConcurrentCollections
 
 function generate(; datasize = 2^19, nkeys = datasize)
+    ints = rand(1:nkeys, datasize)
     lastkey = string(nkeys)
     prefix = suffix = ""
     # prefix = "9" ^ 30  # adding works for hashing and comparison
     # suffix = "0" ^ 30  # adding works for hashing (but not for comparison)
-    ks = prefix .* string.(1:nkeys; pad = length(lastkey)) .* suffix
-    data = rand(ks, datasize)
+    data = prefix .* string.(ints; pad = length(lastkey)) .* suffix
     return data
 end
 
