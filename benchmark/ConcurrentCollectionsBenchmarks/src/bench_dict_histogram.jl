@@ -80,39 +80,50 @@ end
 
 const CACHE = Ref{Any}()
 
-function setup(; ntasks_list = default_ntasks_list(), generate_options...)
-    CACHE[] = data = generate(; generate_options...)
+function setup(;
+    ntasks_list = default_ntasks_list(),
+    datasize = 2^19,
+    nkeys_list = [datasize],
+)
+    CACHE[] = data = Dict(0 => generate(; nkeys = 1))  # dummy data for allocation
+    empty!(data)
     T = typeof(data)
 
     suite = BenchmarkGroup()
-    sbs = suite["alg=:base_seq"] = BenchmarkGroup()
-    sbs["ntasks=1"] = @benchmarkable(
-        # Base.Dict, sequential
-        hist_seq!(dict, CACHE[]::$T),
-        setup = (dict = Dict{String,Int}()),
-        evals = 1,
-    )
-    scs = suite["alg=:cdict_seq"] = BenchmarkGroup()
-    scs["ntasks=1"] = @benchmarkable(
-        # ConcurrentDict, sequential
-        hist_seq!(dict, CACHE[]::$T),
-        setup = (dict = ConcurrentDict{String,Int}()),
-        evals = 1,
-    )
-    sbp = suite["alg=:base_par"] = BenchmarkGroup()
-    scp = suite["alg=:cdict_par"] = BenchmarkGroup()
-    for ntasks in ntasks_list
-        sbp["ntasks=$ntasks"] = @benchmarkable(
-            # Base.Dict, parallel
-            hist_parallel_dac(CACHE[]::$T; ntasks = $ntasks),
+    for nkeys in nkeys_list
+        data[nkeys] = generate(; datasize = datasize, nkeys = nkeys)
+
+        s0 = suite["nkeys=$nkeys"] = BenchmarkGroup()
+
+        sbs = s0["alg=:base_seq"] = BenchmarkGroup()
+        sbs["ntasks=1"] = @benchmarkable(
+            # Base.Dict, sequential
+            hist_seq!(dict, (CACHE[]::$T)[$nkeys]),
+            setup = (dict = Dict{String,Int}()),
             evals = 1,
         )
-        scp["ntasks=$ntasks"] = @benchmarkable(
-            # ConcurrentDict, parallel
-            hist_parallel!(dict, CACHE[]::$T; ntasks = $ntasks),
+        scs = s0["alg=:cdict_seq"] = BenchmarkGroup()
+        scs["ntasks=1"] = @benchmarkable(
+            # ConcurrentDict, sequential
+            hist_seq!(dict, (CACHE[]::$T)[$nkeys]),
             setup = (dict = ConcurrentDict{String,Int}()),
             evals = 1,
         )
+        sbp = s0["alg=:base_par"] = BenchmarkGroup()
+        scp = s0["alg=:cdict_par"] = BenchmarkGroup()
+        for ntasks in ntasks_list
+            sbp["ntasks=$ntasks"] = @benchmarkable(
+                # Base.Dict, parallel
+                hist_parallel_dac((CACHE[]::$T)[$nkeys]; ntasks = $ntasks),
+                evals = 1,
+            )
+            scp["ntasks=$ntasks"] = @benchmarkable(
+                # ConcurrentDict, parallel
+                hist_parallel!(dict, (CACHE[]::$T)[$nkeys]; ntasks = $ntasks),
+                setup = (dict = ConcurrentDict{String,Int}()),
+                evals = 1,
+            )
+        end
     end
     return suite
 end
