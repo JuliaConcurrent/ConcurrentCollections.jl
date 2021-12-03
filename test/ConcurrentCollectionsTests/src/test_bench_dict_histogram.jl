@@ -2,8 +2,19 @@ module TestBenchDictHistogram
 
 using ConcurrentCollections
 using ConcurrentCollectionsBenchmarks.BenchDictHistogram:
-    default_ntasks_list, generate, hist_parallel!, hist_seq!
+    default_ntasks_list, generate, hist_parallel!, hist_parallel_dac, hist_seq!
 using Test
+
+function diffvalues(actual, expected)
+    diffs = []
+    for (key, ve) in expected
+        va = actual[key]
+        if ve != va
+            push!(diffs, (; key, actual = va, expected = ve))
+        end
+    end
+    return diffs
+end
 
 function test()
     datasize_list = [10, 2^5, 2^10, 2^20]
@@ -20,14 +31,7 @@ function test(data)
         cdseq = hist_seq!(ConcurrentDict{String,Int}(), data)
         @test sort(collect(setdiff(keys(dbase), keys(cdseq)))) == []
         @test sort(collect(setdiff(keys(cdseq), keys(dbase)))) == []
-        diffvalues = []
-        for (key, expected) in dbase
-            actual = cdseq[key]
-            if actual != expected
-                push!(diffvalues, (; key, actual, expected))
-            end
-        end
-        @test diffvalues == []
+        @test diffvalues(cdseq, dbase) == []
         @test Dict(cdseq) == dbase
     end
     @testset for ntasks in default_ntasks_list()
@@ -39,15 +43,17 @@ function test(data)
         =#
         @test sort(collect(setdiff(keys(dbase), keys(cdpar)))) == []
         @test sort(collect(setdiff(keys(cdpar), keys(dbase)))) == []
-        diffvalues = []
-        for (key, expected) in dbase
-            actual = cdpar[key]
-            if actual != expected
-                push!(diffvalues, (; key, actual, expected))
-            end
-        end
-        @test diffvalues == []
+        @test diffvalues(cdpar, dbase) == []
         @test Dict(cdpar) == dbase
+    end
+    @testset "dac" begin
+        @testset for ntasks in default_ntasks_list()
+            dpar = hist_parallel_dac(data; ntasks = ntasks)
+            @test sort(collect(setdiff(keys(dbase), keys(dpar)))) == []
+            @test sort(collect(setdiff(keys(dpar), keys(dbase)))) == []
+            @test diffvalues(dpar, dbase) == []
+            @test dpar == dbase
+        end
     end
 end
 
