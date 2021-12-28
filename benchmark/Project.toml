@@ -1,0 +1,10 @@
+[deps]
+BenchmarkConfigSweeps = "5dead3b6-c9e4-435a-a292-80e2716ed6d9"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+ConcurrentCollections = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
+ConcurrentCollectionsBenchmarks = "172d371b-ba13-4e7e-a6ad-f169f5735fdf"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+VegaLite = "112f6efa-9a02-5b7d-90c0-432ed331239a"

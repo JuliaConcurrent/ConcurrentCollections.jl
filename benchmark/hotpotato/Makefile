@@ -9,7 +9,7 @@ export JULIA_PROJECT ?= $(shell pwd)/..
 BENCHMARK_NUM_THREADS ?= $(shell ../nthreads.sh)
 BENCHMARK_EXCLUSIVE ?= 0
 
-.PHONY: all benchmark plots clean backup print-* dump-*
+.PHONY: all benchmark plots print-* dump-*
 
 all:
 	$(MAKE) benchmark
