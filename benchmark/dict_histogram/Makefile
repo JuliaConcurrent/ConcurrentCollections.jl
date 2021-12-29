@@ -11,7 +11,7 @@ BENCHMARK_EXCLUSIVE ?= 0
 
 .PHONY: all benchmark plots clean backup print-* dump-*
 
-all:
+all: dump-config
 	$(MAKE) benchmark
 	$(MAKE) plots
 
@@ -37,7 +37,7 @@ backup:
 	mv tmp/backup backup/backup-$$(date +%Y-%m-%d-%H%M%S)
 
 print-%:
-	@echo $*=${$*}
+	@echo "    "$*=${$*}
 
 dump-config: \
 print-JULIA \
