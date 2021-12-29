@@ -1,0 +1,30 @@
+name: Test benchmarks
+
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+  pull_request:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        julia-version:
+          - '1.7'
+          - 'nightly'
+      fail-fast: false
+    name: Benchmark Julia ${{ matrix.julia-version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.julia-version }}
+      # Use `JULIA_PKG_SERVER` mitigation implemented in julia-buildpkg:
+      - uses: julia-actions/julia-buildpkg@v1
+      - run: make -C benchmark all
+        env:
+          BENCHMARK_NUM_THREADS: "2"
