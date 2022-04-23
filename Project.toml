@@ -1,7 +1,7 @@
 name = "ConcurrentCollections"
 uuid = "5060bff5-0b44-40c5-b522-fcd3ca5cecdd"
 authors = ["Takafumi Arakaki <aka.tkf@gmail.com> and contributors"]
-version = "0.1.1"
+version = "0.1.2-DEV"
 
 [compat]
 julia = "1.7"
