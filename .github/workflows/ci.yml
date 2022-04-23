@@ -12,11 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        julia-version: ['~1.7.0-beta4', 'nightly']
+        julia-version:
+          - '1'
+          - 'nightly'
         nthreads: ['1', '2']
         assertion: ['false']
         include:
-          - julia-version: '~1.7.0-beta4'
+          - julia-version: '1'
             nthreads: '2'
             assertion: 'true'
       fail-fast: false
