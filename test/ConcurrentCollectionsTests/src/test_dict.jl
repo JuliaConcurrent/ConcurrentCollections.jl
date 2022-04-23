@@ -260,6 +260,47 @@ function test_phased_push_pop(; nkeys = 16, phases = 2^10, kwargs...)
     @test actual == desired
 end
 
+function concurrent_intern!(ys, xs)
+    dict = ConcurrentDict{eltype(xs),eltype(xs)}()
+    Threads.@threads for i in eachindex(ys, xs)
+        x = xs[i]
+        ys[i] = get!(dict, x, x)
+    end
+    return ys
+end
+
+function test_get_default()
+    d = ConcurrentDict(:a => 111)
+    @test get!(d, :a, 222) == 111
+    @test get!(d, :b, 222) == 222
+    @test Dict(d) == Dict(:a => 111, :b => 222)
+end
+
+function test_get_function()
+    d = ConcurrentDict(:a => 111)
+    @test get!(() -> 222, d, :a) == 111
+    @test get!(() -> 222, d, :b) == 222
+    @test Dict(d) == Dict(:a => 111, :b => 222)
+end
+
+concurrent_intern(xs) = concurrent_intern!(similar(xs), xs)
+
+function check_concurrent_intern(nitems)
+    strs = [string(i)^50 for i in 1:10]
+    xs = map(s -> sprint(print, s), rand(strs, nitems))
+    ys = concurrent_intern(xs)
+    puv = map(pointer_from_objref, unique(ys))
+    upv = unique(map(pointer_from_objref, ys))
+    @test length(puv) == length(upv)
+    @test puv == upv
+end
+
+function test_concurrent_intern()
+    @testset for trial in 1:5, nitems in [2^n for n in 7:10]
+        check_concurrent_intern(nitems)
+    end
+end
+
 function test_print()
     d = ConcurrentDict(111 => 222, 333 => 444)
     str = sprint(show, "text/plain", d)
