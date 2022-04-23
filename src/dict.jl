@@ -131,6 +131,44 @@ end
 Base.get(d::LinearProbingDict, key, default) =
     something(ConcurrentCollections.maybeget(d, key), default)
 
+function Base.get!(d::LinearProbingDict{<:Any,V}, key, default) where {V}
+    @inline f(::Nothing) = Some{V}(default)
+    @inline f(x) = Keep(x[])
+    y = modify!(f, d, key)
+    if y isa Some
+        return something(y)::V
+    else
+        return y.value::V
+    end
+end
+
+function Base.get!(
+    f::F,
+    d::LinearProbingDict{<:Any,V},
+    key,
+) where {F<:Union{Function,Type},V}
+    value = Ref{V}()
+    isset = Ref(false)
+    @inline function onvalue(::Nothing)
+        if isset[]
+            Some{V}(value[])
+        else
+            local y = f()
+            local v = convert(V, y)
+            value[] = v
+            isset[] = true
+            Some{V}(v)
+        end
+    end
+    @inline onvalue(x) = Keep(x[])
+    y = modify!(onvalue, d, key)
+    if y isa Some
+        return something(y)::V
+    else
+        return y.value::V
+    end
+end
+
 function ConcurrentCollections.maybeget(d::LinearProbingDict{<:Any,V}, key) where {V}
     @inline f(::Nothing) = nothing
     @inline f(x) = Keep(x[])
