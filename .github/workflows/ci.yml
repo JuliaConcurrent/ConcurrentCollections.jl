@@ -12,11 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        julia-version: ['~1.7.0-beta4', 'nightly']
+        julia-version:
+          - '1'
+          - 'nightly'
         nthreads: ['1', '2']
         assertion: ['false']
         include:
-          - julia-version: '~1.7.0-beta4'
+          - julia-version: '1'
             nthreads: '2'
             assertion: 'true'
       fail-fast: false
@@ -70,10 +72,18 @@ jobs:
         if: steps.build-and-deploy.outcome == 'skipped'
         run: julia -e 'using Run; Run.docs()'
 
+
+  # https://github.com/tkf/julia-code-style-suggesters
+  code-style:
+    if: always() && github.event.pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tkf/julia-code-style-suggesters@v1
+
   # A job that succeeds if and only if all jobs in `test` succeed.
   all-success:
     if: always() && github.event.pull_request
-    needs: [test, documenter]
+    needs: [test, documenter, code-style]
     runs-on: ubuntu-latest
     steps:
       # https://github.com/tkf/merge-conclusions-action
