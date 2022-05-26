@@ -4,7 +4,8 @@ using JSON
 using Statistics
 using VegaLite
 
-rawdata = JSON.parsefile(joinpath(@__DIR__, "build/results.json"))
+resultsdata = JSON.parsefile(joinpath(@__DIR__, "build/results.json"))
+rawdata = resultsdata["results"]
 
 potatos = map(rawdata["potatos"]) do info
     result = info["result"]

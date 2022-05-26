@@ -2,6 +2,8 @@ using ConcurrentCollections: DualLinkedConcurrentRingQueue
 using ConcurrentCollectionsBenchmarks.BenchQueueHotPotato: hotpotato!, fai_stats
 using JSON
 
+include("../info_dump.jl")
+
 function sweep(; repeat = 10, duration = 1, maxntasks = Threads.nthreads())
     # cooldown() = sleep(0.1)
     # cooldown() = GC.gc()
@@ -27,23 +29,15 @@ function sweep(; repeat = 10, duration = 1, maxntasks = Threads.nthreads())
     return (; potatos, fais, repeat, duration)
 end
 
-function git_info(dir = @__DIR__)
-    git(cmd) = strip(read(setenv(`git $cmd`; dir), String))
-    return (;
-        revision = git(`rev-parse HEAD`),
-        status = git(`status --short --untracked-files=no --porcelain`),
-    )
-end
-
 function main(args = ARGS)
     output = get(args, 1, joinpath(@__DIR__, "build", "results.json"))
     mkpath(dirname(output))
-    git = git_info()
+    info = InfoDump.info()
     @info "Warmup..."
     sweep(; repeat = 1, duration = 0.1, maxntasks = 1)
     @info "Benchmarking..."
     results = sweep()
-    results = (; results..., git)
+    results = (; results, info)
     open(output, write = true) do io
         JSON.print(io, results)
     end
