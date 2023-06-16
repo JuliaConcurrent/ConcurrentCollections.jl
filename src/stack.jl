@@ -15,10 +15,10 @@ function Base.push!(stack::ConcurrentStack{T}, v) where {T}
     v = convert(T, v)
     node = TSNode{T}(v)
 
-    next = @atomic stack.next
+    next = @atomic(:monotonic, stack.next)
     while true
         node.next = next
-        next, ok = @atomicreplace(stack.next, next => node)
+        next, ok = @atomicreplace(:release, :monotonic, stack.next, next => node)
         ok && break
     end
 
@@ -27,11 +27,11 @@ end
 
 function ConcurrentCollections.maybepop!(stack::ConcurrentStack)
     while true
-        node = @atomic stack.next
+        node = @atomic(:acquire, stack.next)
         node === nothing && return nothing
 
         next = node.next
-        next, ok = @atomicreplace(stack.next, node => next)
+        next, ok = @atomicreplace(:monotonic, :monotonic, stack.next, node => next)
         if ok
             return Some(node.value)
         end
