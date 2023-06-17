@@ -1,6 +1,6 @@
     ConcurrentStack{T}()
 
-Concurrent stack of objects of type `T`.
+Treiber's concurrent stack of objects of type `T`.
 
 Use `push!` to insert an element and [`maybepop!`](@ref) to retrieve and remove an
 element.
