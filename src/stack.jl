@@ -1,12 +1,12 @@
 mutable struct TSNode{T}
-    value::T
     next::Union{TSNode{T},Nothing}
+    value::T
 end
 
-TSNode{T}(value::T) where {T} = TSNode{T}(value, nothing)
+TSNode{T}(value::T) where {T} = TSNode{T}(nothing, value)
 
 mutable struct ConcurrentStack{T}
-    @atomic next::Union{TSNode{T},Nothing}
+    @atomic head::Union{TSNode{T},Nothing}
 end
 
 ConcurrentStack{T}() where {T} = ConcurrentStack{T}(nothing)
@@ -15,10 +15,10 @@ function Base.push!(stack::ConcurrentStack{T}, v) where {T}
     v = convert(T, v)
     node = TSNode{T}(v)
 
-    next = @atomic(:monotonic, stack.next)
+    head = @atomic(:monotonic, stack.head)
     while true
-        node.next = next
-        next, ok = @atomicreplace(:release, :monotonic, stack.next, next => node)
+        node.next = head
+        head, ok = @atomicreplace(:release, :monotonic, stack.head, head => node)
         ok && break
     end
 
@@ -27,13 +27,13 @@ end
 
 function ConcurrentCollections.maybepop!(stack::ConcurrentStack)
     while true
-        node = @atomic(:acquire, stack.next)
-        node === nothing && return nothing
+        head = @atomic(:acquire, stack.head)
+        head === nothing && return nothing
 
-        next = node.next
-        next, ok = @atomicreplace(:monotonic, :monotonic, stack.next, node => next)
+        next = head.next
+        next, ok = @atomicreplace(:monotonic, :monotonic, stack.head, head => next)
         if ok
-            return Some(node.value)
+            return Some(head.value)
         end
     end
 end
